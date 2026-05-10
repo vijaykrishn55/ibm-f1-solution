@@ -1,0 +1,6 @@
+{
+  "circuit": "bahrain",
+  "corners": {},
+  "soc_danger_threshold": 0.15,
+  "boost_zone_corners": []
+}

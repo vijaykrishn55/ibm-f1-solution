@@ -1,0 +1,6 @@
+# Global settings for WingMan
+api_keys: {}
+slo:
+  fast_path_p95_ms: 100
+models:
+  granite: true

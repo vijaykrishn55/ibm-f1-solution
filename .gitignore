@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp/Cache
+*.tmp
+.cache/
+temp/
+tmp/
+
+# Dependencies
+/dependencies/
+/libs/
+
+# Logs
+*.log
+logs/
+
+# Claude Code / Agents / Skills
+.agents/
+.claude/
+.agent/
+agents/
+skills/
+plugins/
+hooks/
+.cursor/
+.qoder/
+.windsurf/
