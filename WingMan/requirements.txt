@@ -1,0 +1,16 @@
+fastf1
+httpx
+filterpy
+faiss-cpu
+scipy
+scikit-learn
+pandas
+numpy
+websockets
+fastapi
+uvicorn
+pyttsx3
+gTTS
+redis
+pytest
+pytest-asyncio
