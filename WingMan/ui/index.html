@@ -1,13 +1,196 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>WingMan — Demo UI</title>
-    <style>body{font-family:Arial;background:#111;color:#eee;padding:16px}</style>
-  </head>
-  <body>
-    <h1>WingMan — Engineer / Fan Panel (placeholder)</h1>
-    <div id="engineer">Engineer panel (placeholder)</div>
-    <div id="fan">Fan panel (placeholder)</div>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WingMan</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0a; color: #f0f0f0; font-family: monospace; height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #111; padding: 12px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #222; }
+    header h1 { font-size: 18px; color: #e10600; letter-spacing: 2px; }
+    #source-badge { font-size: 11px; padding: 3px 8px; border-radius: 3px; background: #333; color: #aaa; }
+    #source-badge.torcs { background: #1a3a1a; color: #4caf50; }
+    #connection-status { margin-left: auto; font-size: 11px; color: #555; }
+    #connection-status.connected { color: #4caf50; }
+
+    .panels { display: flex; flex: 1; overflow: hidden; }
+
+    /* Engineer Panel */
+    .panel { flex: 1; padding: 20px; border-right: 1px solid #1a1a1a; overflow-y: auto; }
+    .panel h2 { font-size: 11px; color: #555; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+
+    #recommendation { font-size: 22px; color: #ffffff; line-height: 1.4; min-height: 60px; margin-bottom: 16px; }
+    #reason { font-size: 13px; color: #888; margin-bottom: 16px; }
+
+    .metric-row { display: flex; gap: 16px; margin-bottom: 16px; }
+    .metric { background: #111; border-radius: 4px; padding: 10px 14px; flex: 1; }
+    .metric .label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    .metric .value { font-size: 20px; margin-top: 4px; }
+    .metric .value.green { color: #4caf50; }
+    .metric .value.yellow { color: #ffc107; }
+    .metric .value.red { color: #e10600; }
+
+    .bar-label { font-size: 10px; color: #555; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .bar-bg { background: #1a1a1a; border-radius: 3px; height: 8px; margin-bottom: 16px; }
+    .bar-fill { height: 8px; border-radius: 3px; background: #e10600; transition: width 0.3s; }
+
+    #alert-log { list-style: none; }
+    #alert-log li { font-size: 11px; color: #555; padding: 6px 0; border-bottom: 1px solid #111; }
+    #alert-log li span.rule { color: #888; }
+    #alert-log li span.lap { color: #444; }
+
+    /* Fan Panel */
+    #fan-explanation { font-size: 16px; color: #ccc; line-height: 1.6; min-height: 60px; margin-bottom: 20px; }
+    #soc-plain { font-size: 13px; color: #888; margin-bottom: 20px; padding: 10px; background: #111; border-radius: 4px; }
+
+    /* GridSense Panel */
+    #complaint-type { font-size: 16px; color: #ffc107; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    #grid-recommendation { font-size: 13px; color: #ccc; margin-bottom: 16px; }
+    #transcript-log { list-style: none; }
+    #transcript-log li { font-size: 11px; color: #555; padding: 6px 0; border-bottom: 1px solid #111; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>WINGMAN</h1>
+  <span id="source-badge">NO DATA</span>
+  <span id="connection-status">● DISCONNECTED</span>
+</header>
+
+<div class="panels">
+
+  <!-- Engineer Panel -->
+  <div class="panel">
+    <h2>Engineer</h2>
+    <div id="recommendation">Waiting for telemetry...</div>
+    <div id="reason"></div>
+
+    <div class="metric-row">
+      <div class="metric">
+        <div class="label">SOC</div>
+        <div class="value" id="soc-value">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Corner</div>
+        <div class="value" id="corner-value">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Lap</div>
+        <div class="value" id="lap-value">—</div>
+      </div>
+    </div>
+
+    <div class="bar-label">Confidence</div>
+    <div class="bar-bg"><div class="bar-fill" id="confidence-bar" style="width:0%"></div></div>
+
+    <div class="bar-label">Alert Log</div>
+    <ul id="alert-log"></ul>
+  </div>
+
+  <!-- Fan Panel -->
+  <div class="panel">
+    <h2>Fan View</h2>
+    <div id="fan-explanation">Strategy analysis will appear here after Granite processes laps.</div>
+    <div id="soc-plain">Battery status loading...</div>
+  </div>
+
+  <!-- GridSense Panel -->
+  <div class="panel" style="border-right:none">
+    <h2>GridSense — Driver Radio</h2>
+    <div id="complaint-type">No complaint detected</div>
+    <div id="grid-recommendation"></div>
+    <div class="bar-label">Recent Transcripts</div>
+    <ul id="transcript-log"></ul>
+  </div>
+
+</div>
+
+<script>
+  const ws = new WebSocket("ws://localhost:8001/ws");
+  const seenAlerts = new Set();
+
+  ws.onopen = () => {
+    document.getElementById("connection-status").textContent = "● CONNECTED";
+    document.getElementById("connection-status").classList.add("connected");
+  };
+
+  ws.onclose = () => {
+    document.getElementById("connection-status").textContent = "● DISCONNECTED";
+    document.getElementById("connection-status").classList.remove("connected");
+  };
+
+  ws.onmessage = (event) => {
+    const payload = JSON.parse(event.data);
+
+    // Deduplication
+    if (seenAlerts.has(payload.alert_id)) return;
+    seenAlerts.add(payload.alert_id);
+
+    if (payload.source_module === "gridsense") {
+      updateGridSense(payload);
+    } else {
+      updateEngineer(payload);
+    }
+
+    updateShared(payload);
+  };
+
+  function updateEngineer(p) {
+    document.getElementById("recommendation").textContent = p.recommendation;
+    document.getElementById("reason").textContent = p.reason;
+    document.getElementById("confidence-bar").style.width = (p.confidence * 100) + "%";
+
+    if (p.fan_explanation) {
+      document.getElementById("fan-explanation").textContent = p.fan_explanation;
+    }
+
+    // Alert log (max 8 entries)
+    const log = document.getElementById("alert-log");
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="lap">Lap ${p.lap} C${p.corner_id}</span> — <span class="rule">${p.rule}</span> (${Math.round(p.confidence * 100)}%)`;
+    log.insertBefore(li, log.firstChild);
+    if (log.children.length > 8) log.removeChild(log.lastChild);
+  }
+
+  function updateGridSense(p) {
+    document.getElementById("complaint-type").textContent = p.rule.replace("gridsense_", "").replace(/_/g, " ");
+    document.getElementById("grid-recommendation").textContent = p.recommendation;
+
+    const log = document.getElementById("transcript-log");
+    const li = document.createElement("li");
+    li.textContent = `Lap ${p.lap}: ${p.reason}`;
+    log.insertBefore(li, log.firstChild);
+    if (log.children.length > 3) log.removeChild(log.lastChild);
+  }
+
+  function updateShared(p) {
+    // SOC value + colour
+    const soc = p.soc_estimated;
+    const socEl = document.getElementById("soc-value");
+    socEl.textContent = Math.round(soc * 100) + "%";
+    socEl.className = "value " + (soc > 0.7 ? "green" : soc > 0.4 ? "yellow" : "red");
+
+    document.getElementById("corner-value").textContent = p.corner_id;
+    document.getElementById("lap-value").textContent = p.lap;
+
+    // Source badge
+    const badge = document.getElementById("source-badge");
+    badge.textContent = p.data_source.toUpperCase();
+    badge.className = p.data_source === "torcs" ? "torcs" : "";
+
+    // SOC plain text (fan panel)
+    const plains = {
+      high:   "Battery healthy — full boost available",
+      mid:    "Battery at 60% — use boost selectively",
+      low:    "Battery low — limit boost usage",
+      danger: "Battery critical — no boost available"
+    };
+    const key = soc > 0.7 ? "high" : soc > 0.5 ? "mid" : soc > 0.3 ? "low" : "danger";
+    document.getElementById("soc-plain").textContent = plains[key];
+  }
+</script>
+
+</body>
 </html>

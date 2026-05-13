@@ -1,0 +1,15 @@
+fastf1==3.8.3
+httpx==0.28.1
+filterpy==1.4.5
+faiss-cpu==1.13.2
+scipy==1.16.3
+scikit-learn==1.7.2
+pandas==2.3.3
+numpy==2.3.5
+websockets==16.0
+fastapi==0.115.2
+uvicorn==0.27.1
+pyttsx3==2.99
+gTTS==2.5.4
+redis==7.4.0
+

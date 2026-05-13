@@ -40,6 +40,12 @@ tmp/
 *.log
 logs/
 
+# Docs (team planning and conversation logs)
+Docs/Team_Execution_Plan.md
+Docs/claude-conversation.txt
+Docs/WingMan + GridSense — Parallel Team Plan.md
+Docs/WingMan_team_plan_v2.md
+
 # Claude Code / Agents / Skills
 .agents/
 .claude/
