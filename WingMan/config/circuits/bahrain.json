@@ -9,5 +9,22 @@
     "10": {"net_lift_value":  0.15, "lift_energy_gain": 0.22, "lift_aero_cost_s": 0.07},
     "11": {"net_lift_value":  0.03, "lift_energy_gain": 0.09, "lift_aero_cost_s": 0.06},
     "14": {"net_lift_value":  0.11, "lift_energy_gain": 0.19, "lift_aero_cost_s": 0.08}
+  },
+  "corner_distances": {
+    "1":  {"dist_min": 0,    "dist_max": 400},
+    "2":  {"dist_min": 400,  "dist_max": 700},
+    "3":  {"dist_min": 700,  "dist_max": 950},
+    "4":  {"dist_min": 950,  "dist_max": 1200},
+    "5":  {"dist_min": 1200, "dist_max": 1450},
+    "6":  {"dist_min": 1450, "dist_max": 1650},
+    "7":  {"dist_min": 1650, "dist_max": 1900},
+    "8":  {"dist_min": 1900, "dist_max": 2150},
+    "9":  {"dist_min": 2150, "dist_max": 2400},
+    "10": {"dist_min": 2400, "dist_max": 2650},
+    "11": {"dist_min": 2650, "dist_max": 2900},
+    "12": {"dist_min": 2900, "dist_max": 3150},
+    "13": {"dist_min": 3150, "dist_max": 3400},
+    "14": {"dist_min": 3400, "dist_max": 3700},
+    "15": {"dist_min": 3700, "dist_max": 5412}
   }
 }

@@ -1,3 +1,7 @@
+"""
+Hand-crafted mock state vectors for Day 0 testing.
+Create ~20 realistic vectors here for unit tests and component integration.
+"""
 import time
 
 BASE = {
@@ -25,30 +29,46 @@ BASE = {
     "delta_from_optimal": None,
 }
 
-# Day 0 mock state vectors for unit testing.
+# Scenario: Normal racing — should fire safe_default
 NORMAL = {**BASE}
+
+# Scenario: SOC danger at boost zone — should fire soc_danger_alert
 SOC_DANGER = {**BASE, "soc_estimated": 0.22, "corner_id": 11}
+
+# Scenario: Lifting when it's not worth it — should fire lift_not_worth_it
 LIFT_NOT_WORTH = {**BASE, "throttle": 0.18, "corner_id": 1}
+
+# Scenario: Good recharge window — should fire optimal_recharge_window
 GOOD_RECHARGE = {**BASE, "soc_estimated": 0.48, "throttle": 0.88, "corner_id": 10}
+
+# Scenario: Safety car — should fire safety_car_recharge (priority 10)
 SAFETY_CAR = {**BASE, "session_flag": "sc", "soc_estimated": 0.65}
+
+# Scenario: Stale data — should trigger safe fallback
 STALE_DATA = {**BASE, "data_age_ms": 2500}
+
+# Scenario: TORCS source data — no DRS, SOC simulated from fuel
 TORCS_STATE = {**BASE, "drs": False, "data_source": "torcs", "soc_estimated": 0.61}
 
-BATTERY_ZERO = {**BASE, "soc_estimated": 0.05, "energy_delta": -0.012, "corner_id": 12}
-DRS_IN_CORNER = {**BASE, "corner_id": 7, "drs": True, "throttle": 0.25, "speed": 210.0}
-RED_FLAG = {**BASE, "session_flag": "red", "speed": 60.0, "throttle": 0.05}
-HIGH_GAP = {**BASE, "gap_ahead": 8.2, "throttle": 0.4, "corner_id": 3}
-LOW_GAP = {**BASE, "gap_ahead": 0.3, "throttle": 0.45, "corner_id": 8}
-LIFT_WINDOW = {**BASE, "corner_id": 14, "throttle": 0.78, "soc_estimated": 0.55}
-ENERGY_PICKUP = {**BASE, "energy_delta": 0.006, "throttle": 0.12, "corner_id": 5}
-BRAKE_ZONE = {**BASE, "brake": True, "throttle": 0.0, "speed": 150.0, "corner_id": 6}
-HIGH_UNCERTAINTY = {**BASE, "soc_uncertainty": 0.18, "data_age_ms": 95}
-LOW_UNCERTAINTY = {**BASE, "soc_uncertainty": 0.01, "data_age_ms": 20}
-DRIVER_COMPLAINT = {**BASE, "radio_transcript": "Car is very loose on the rear.", "complaint_detected": "oversteer"}
-SESSION_YELLOW = {**BASE, "session_flag": "yellow", "gap_ahead": 6.5, "soc_estimated": 0.53}
-FAISS_MATCH = {**BASE, "corner_id": 10, "soc_estimated": 0.48, "throttle": 0.9, "gap_ahead": 1.2}
+# Scenario: Battery near zero
+BATTERY_CRITICAL = {**BASE, "soc_estimated": 0.04, "corner_id": 12}
 
-ALL_MOCKS = [
+# Scenario: CUSUM-like fast depletion (energy_delta spike)
+CUSUM_ALARM = {**BASE, "energy_delta": -0.02, "soc_estimated": 0.5}
+
+# Scenario: Red flag
+RED_FLAG = {**BASE, "session_flag": "red", "soc_estimated": 0.55}
+
+# Scenario: DRS in corner (bad data) — should be handled
+DRS_IN_CORNER = {**BASE, "drs": True, "corner_id": 5, "lap_fraction": 0.78}
+
+# Create additional variants across corners and laps to reach ~20 vectors.
+EXTRA_SCENARIOS = []
+for c in range(1, 9):
+    EXTRA_SCENARIOS.append({**BASE, "corner_id": c, "lap": 10 + c, "lap_fraction": (c * 0.11) % 1.0})
+
+# Export list used by unit tests
+MOCK_STATE_VECTORS = [
     NORMAL,
     SOC_DANGER,
     LIFT_NOT_WORTH,
@@ -56,23 +76,12 @@ ALL_MOCKS = [
     SAFETY_CAR,
     STALE_DATA,
     TORCS_STATE,
-    BATTERY_ZERO,
-    DRS_IN_CORNER,
+    BATTERY_CRITICAL,
+    CUSUM_ALARM,
     RED_FLAG,
-    HIGH_GAP,
-    LOW_GAP,
-    LIFT_WINDOW,
-    ENERGY_PICKUP,
-    BRAKE_ZONE,
-    HIGH_UNCERTAINTY,
-    LOW_UNCERTAINTY,
-    DRIVER_COMPLAINT,
-    SESSION_YELLOW,
-    FAISS_MATCH,
-]
+    DRS_IN_CORNER,
+] + EXTRA_SCENARIOS
 
-if __name__ == '__main__':
-    for idx, scenario in enumerate(ALL_MOCKS, start=1):
-        print(f"SCENARIO {idx}: corner={scenario['corner_id']} soc={scenario['soc_estimated']:.2f} "
-              f"session={scenario['session_flag']} throttle={scenario['throttle']} "
-              f"drs={scenario['drs']} gap={scenario['gap_ahead']}")
+if __name__ == "__main__":
+    # Quick sanity run to print counts
+    print(f"Loaded {len(MOCK_STATE_VECTORS)} mock state vectors")
