@@ -49,7 +49,7 @@ class CUSUMDetector:
         Returns True if the alarm fires this tick, False otherwise.
         Resets cumsum on alarm so the detector is ready for the next event.
         """
-        deviation = actual_value - self.expected
+        deviation = self.expected - actual_value
         self.cumsum = max(0.0, self.cumsum + deviation)
 
         if self.cumsum > self.threshold:

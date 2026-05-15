@@ -199,13 +199,13 @@ class RulesEngine:
     # ── Ordered rule list (highest to lowest priority) ───────────────────────
 
     _RULES = [
-        _rule_stale_data,
-        _rule_safety_car_recharge,
-        _rule_soc_danger_alert,
-        _rule_cusum_soc_alarm,
-        _rule_lift_not_worth_it,
-        _rule_optimal_recharge_window,
-    ]
+    _rule_safety_car_recharge,
+    _rule_soc_danger_alert,
+    _rule_cusum_soc_alarm,
+    _rule_stale_data,
+    _rule_lift_not_worth_it,
+    _rule_optimal_recharge_window,
+]
 
     # ── Public API ───────────────────────────────────────────────────────────
 
