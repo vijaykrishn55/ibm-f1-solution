@@ -51,7 +51,7 @@ def build(vectors_path: str | None = None, outcomes_path: str | None = None):
 
     index_path = os.path.join(OUT_DIR, INDEX_NAME)
     faiss.write_index(index, index_path)
-    print(f"Index written → {index_path}  ({index.ntotal} vectors)")
+    print(f"Index written -> {index_path}  ({index.ntotal} vectors)")
 
     # Also save a JSON metadata file for the live wrapper
     meta = {
@@ -63,10 +63,10 @@ def build(vectors_path: str | None = None, outcomes_path: str | None = None):
     meta_path = os.path.join(OUT_DIR, "index_meta.json")
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
-    print(f"Metadata written → {meta_path}")
+    print(f"Metadata written -> {meta_path}")
     return index_path
 
 
 if __name__ == "__main__":
     build()
-    print("\n✓  FAISS index built successfully")
+    print("\nOK  FAISS index built successfully")

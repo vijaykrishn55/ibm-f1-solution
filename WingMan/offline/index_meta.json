@@ -1,0 +1,6 @@
+{
+  "dim": 8,
+  "n_vectors": 500,
+  "index_file": "bahrain_index.faiss",
+  "outcomes_file": "outcomes.npy"
+}

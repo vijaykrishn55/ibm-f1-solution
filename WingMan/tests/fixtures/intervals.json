@@ -1,0 +1,14 @@
+[
+  {"date":"2024-03-02T15:01:00.000Z","driver_number":1,"gap_to_leader":"+2.156","interval":"+1.432","session_key":9158},
+  {"date":"2024-03-02T15:01:01.000Z","driver_number":1,"gap_to_leader":"+2.098","interval":"+1.401","session_key":9158},
+  {"date":"2024-03-02T15:01:02.000Z","driver_number":1,"gap_to_leader":"+2.044","interval":"+1.388","session_key":9158},
+  {"date":"2024-03-02T15:01:03.000Z","driver_number":1,"gap_to_leader":"+1.985","interval":"+1.352","session_key":9158},
+  {"date":"2024-03-02T15:01:04.000Z","driver_number":1,"gap_to_leader":"+1.920","interval":"+1.310","session_key":9158},
+  {"date":"2024-03-02T15:01:05.000Z","driver_number":1,"gap_to_leader":"+1.871","interval":"+1.280","session_key":9158},
+  {"date":"2024-03-02T15:01:06.000Z","driver_number":1,"gap_to_leader":"+1.810","interval":"+1.245","session_key":9158},
+  {"date":"2024-03-02T15:01:07.000Z","driver_number":1,"gap_to_leader":"+1.755","interval":"+1.210","session_key":9158},
+  {"date":"2024-03-02T15:01:08.000Z","driver_number":1,"gap_to_leader":"+1.698","interval":"+1.178","session_key":9158},
+  {"date":"2024-03-02T15:01:09.000Z","driver_number":1,"gap_to_leader":"+1.650","interval":"+1.150","session_key":9158},
+  {"date":"2024-03-02T15:01:10.000Z","driver_number":1,"gap_to_leader":"+1.602","interval":"+1.118","session_key":9158},
+  {"date":"2024-03-02T15:01:11.000Z","driver_number":1,"gap_to_leader":"+1.555","interval":"+1.085","session_key":9158}
+]

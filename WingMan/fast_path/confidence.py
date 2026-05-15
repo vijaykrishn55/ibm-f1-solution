@@ -92,7 +92,7 @@ class ConfidenceScorer:
         final_score = round(max(0.0, min(1.0, base + adj)), 4)
 
         # ── Safe fallback override ───────────────────────────────────────────
-        if final_score < CONFIDENCE_FLOOR:
+        if final_score <= CONFIDENCE_FLOOR:
             rule           = SAFE_DEFAULT_RULE
             recommendation = SAFE_DEFAULT_REC
             reason         = (

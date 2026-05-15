@@ -53,14 +53,20 @@ TORCS_STATE = {**BASE, "drs": False, "data_source": "torcs", "soc_estimated": 0.
 # Scenario: Battery near zero
 BATTERY_CRITICAL = {**BASE, "soc_estimated": 0.04, "corner_id": 12}
 
-# Scenario: CUSUM-like fast depletion (energy_delta spike)
-CUSUM_ALARM = {**BASE, "energy_delta": -0.02, "soc_estimated": 0.5}
-
 # Scenario: Red flag
 RED_FLAG = {**BASE, "session_flag": "red", "soc_estimated": 0.55}
 
 # Scenario: DRS in corner (bad data) — should be handled
 DRS_IN_CORNER = {**BASE, "drs": True, "corner_id": 5, "lap_fraction": 0.78}
+
+# Scenario: CUSUM-like fast depletion (energy_delta spike)
+CUSUM_ALARM = {
+    **BASE,
+    "soc_estimated": 0.41,
+    "energy_delta": -0.015,
+    "corner_id": 7,
+    "cusum_soc_alarm": True,
+}
 
 # Create additional variants across corners and laps to reach ~20 vectors.
 EXTRA_SCENARIOS = []
@@ -85,3 +91,14 @@ MOCK_STATE_VECTORS = [
 if __name__ == "__main__":
     # Quick sanity run to print counts
     print(f"Loaded {len(MOCK_STATE_VECTORS)} mock state vectors")
+
+ALL_SCENARIOS = [
+    ("NORMAL",        NORMAL),
+    ("SOC_DANGER",    SOC_DANGER),
+    ("LIFT_NOT_WORTH",LIFT_NOT_WORTH),
+    ("GOOD_RECHARGE", GOOD_RECHARGE),
+    ("SAFETY_CAR",    SAFETY_CAR),
+    ("STALE_DATA",    STALE_DATA),
+    ("TORCS_STATE",   TORCS_STATE),
+    ("CUSUM_ALARM",   CUSUM_ALARM),
+]

@@ -1,4 +1,11 @@
-"""OpenF1 Stream: polls mock server at 4Hz and builds partial state vectors."""
+"""OpenF1 Stream: polls mock server at 4Hz and builds partial state vectors.
+
+Day 2 additions:
+  - Polls /v1/session_status for live flag state (was hardcoded "green")
+  - Polls /v1/speed for replay speed multiplier (adjusts interval dynamically)
+  - Graceful recovery on fetch errors (exponential backoff)
+  - Lap transition detection for event queue notifications
+"""
 
 import asyncio
 import time
@@ -48,7 +55,18 @@ async def fetch_all(client: httpx.AsyncClient) -> dict:
         return {}
 
 
-def build_state(raw: dict, corner_map: dict) -> dict:
+async def fetch_session_status(client: httpx.AsyncClient) -> dict:
+    """Fetch current session flag and replay speed from mock server (Day 2)."""
+    try:
+        r = await client.get(f"{BASE_URL}/v1/session_status")
+        if r.status_code == 200:
+            return r.json()
+    except Exception as e:
+        print(f"[Stream] Session status fetch error: {e}")
+    return {"flag": "green", "speed_mult": 1.0}
+
+
+def build_state(raw: dict, corner_map: dict, session_flag: str = "green") -> dict:
     """Convert raw merged API response into a partial state vector."""
     now = time.time()
 
@@ -103,7 +121,7 @@ def build_state(raw: dict, corner_map: dict) -> dict:
         soc_raw      = 0.85,        # Person B fills via Kalman
         soc_estimated = 0.0,        # Person B fills via Kalman
         gap_ahead    = gap_ahead,
-        session_flag = "green",     # OpenF1 flag endpoint wired on Day 2
+        session_flag = session_flag,  # Day 2: live from /v1/session_status
         data_age_ms  = data_age_ms,
         data_source  = "openf1",
     )
@@ -113,17 +131,51 @@ async def stream(queue: asyncio.Queue, circuit: str = "bahrain", interval: float
     """
     Main polling loop. Puts partial state vectors onto queue every 250ms.
     Run as a background asyncio task.
+
+    Day 2: polls session_status for live flag + speed multiplier.
     """
     corner_map = load_corner_map(circuit)
     print(f"[Stream] Starting OpenF1 poll loop at {1/interval:.0f}Hz")
 
+    _last_lap        = 0
+    _consecutive_err = 0
+    _session_flag    = "green"
+    _speed_mult      = 1.0
+
     async with httpx.AsyncClient(timeout=2.0) as client:
         while True:
             start = time.perf_counter()
+
+            # --- Fetch session status every ~1 second (every 4th tick) ---
+            if _last_lap == 0 or (int(start * 4) % 4 == 0):
+                status = await fetch_session_status(client)
+                _session_flag = status.get("flag", "green")
+                _speed_mult   = status.get("speed_mult", 1.0)
+
+            # --- Fetch telemetry ---
             raw = await fetch_all(client)
             if raw:
-                state = build_state(raw, corner_map)
+                state = build_state(raw, corner_map, session_flag=_session_flag)
                 await queue.put(state)
-            elapsed = time.perf_counter() - start
-            sleep_time = max(0.0, interval - elapsed)
+                _consecutive_err = 0
+
+                # --- Lap transition detection ---
+                current_lap = state.get("lap", 0)
+                if current_lap > _last_lap and _last_lap > 0:
+                    print(f"[Stream] Lap transition: {_last_lap} -> {current_lap}")
+                _last_lap = current_lap
+            else:
+                _consecutive_err += 1
+                if _consecutive_err >= 5:
+                    print(f"[Stream] {_consecutive_err} consecutive errors — backing off")
+
+            # --- Adaptive sleep: respect speed multiplier ---
+            elapsed    = time.perf_counter() - start
+            effective  = interval / max(_speed_mult, 0.25)
+            sleep_time = max(0.0, effective - elapsed)
+
+            # Exponential backoff on repeated errors
+            if _consecutive_err >= 5:
+                sleep_time = min(sleep_time + (0.5 * _consecutive_err), 5.0)
+
             await asyncio.sleep(sleep_time)
