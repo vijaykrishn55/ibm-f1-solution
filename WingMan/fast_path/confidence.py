@@ -17,7 +17,17 @@ from __future__ import annotations
 from uuid import uuid4
 import time
 
-
+def score(
+    self,
+    alert:         dict,
+    state:         dict,
+    faiss_matches: list[dict] | None = None,
+) -> dict:
+    t_start = time.perf_counter()        # ← ADD THIS LINE
+    
+    priority = alert.get("priority", 1)
+    # ... rest of your existing code unchanged ...
+    
 # ── Base scores by priority ───────────────────────────────────────────────────
 
 PRIORITY_BASE_SCORE: dict[int, float] = {
@@ -182,3 +192,30 @@ if __name__ == "__main__":
     print(f"  score={result4['confidence']}  adj={result4['_confidence_adj']}")
 
     print("\n✓  All confidence tests passed")
+def score(
+    self,
+    alert:         dict,
+    state:         dict,
+    faiss_matches: list[dict] | None = None,
+) -> dict:
+    t_start = time.perf_counter()        # ← ADD THIS (line 1)
+
+    # ... all your existing code stays exactly the same ...
+
+    return {
+        "alert_id":       alert.get("alert_id", str(uuid4())),
+        "rule":           rule,
+        "recommendation": recommendation,
+        "reason":         reason,
+        "priority":       priority,
+        "confidence":     final_score,
+        "soc_estimated":  state.get("soc_estimated", 0.0),
+        "corner_id":      state.get("corner_id",     0),
+        "lap":            state.get("lap",           0),
+        "timestamp":      state.get("timestamp",     time.time()),
+        "fan_explanation": alert.get("fan_explanation", ""),
+        "source_module":  alert.get("source_module", "voltedge"),
+        "_confidence_base": base,
+        "_confidence_adj":  round(adj, 4),
+        "processing_ms":  round((time.perf_counter() - t_start) * 1000, 2),  # ← ADD THIS (line 2)
+    }
