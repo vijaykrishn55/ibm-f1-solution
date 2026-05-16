@@ -1,0 +1,37 @@
+[
+  {
+    "date": "2024-03-02T14:31:05+00:00",
+    "driver_number": "1",
+    "recording_url": "mock://fixtures/radio_clip_01.mp3",
+    "_mock_transcript": "I'm pushing in Turn 3, going wide, understeering a lot",
+    "_mock_complaint": "understeer"
+  },
+  {
+    "date": "2024-03-02T14:45:22+00:00",
+    "driver_number": "1",
+    "recording_url": "mock://fixtures/radio_clip_02.mp3",
+    "_mock_transcript": "The rear is very loose, car is sliding in sector two, lap 18",
+    "_mock_complaint": "oversteer"
+  },
+  {
+    "date": "2024-03-02T15:02:11+00:00",
+    "driver_number": "1",
+    "recording_url": "mock://fixtures/radio_clip_03.mp3",
+    "_mock_transcript": "Getting some vibration from the front left, might be a flat spot",
+    "_mock_complaint": "vibration"
+  },
+  {
+    "date": "2024-03-02T15:18:47+00:00",
+    "driver_number": "1",
+    "recording_url": "mock://fixtures/radio_clip_04.mp3",
+    "_mock_transcript": "Battery not harvesting on the main straight, no power through sector one",
+    "_mock_complaint": "energy"
+  },
+  {
+    "date": "2024-03-02T15:34:09+00:00",
+    "driver_number": "1",
+    "recording_url": "mock://fixtures/radio_clip_05.mp3",
+    "_mock_transcript": "No understeer anymore, the front grip is much better now",
+    "_mock_complaint": "none"
+  }
+]
