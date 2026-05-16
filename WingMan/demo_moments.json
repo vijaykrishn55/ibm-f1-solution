@@ -1,0 +1,30 @@
+{
+  "demo_window": "Bahrain 2024 Race, Laps 28-38",
+  "moment1": {
+    "lap": 31,
+    "corner": 11,
+    "rule": "soc_danger_alert",
+    "recommendation": "Recharge immediately — boost zone in 1 corner",
+    "confidence": 0.82,
+    "processing_ms": 73.0,
+    "narration": "Battery critical at the hardest acceleration zone. WingMan catches it first."
+  },
+  "moment2": {
+    "lap": 34,
+    "corner": 10,
+    "rule": "optimal_recharge_window",
+    "recommendation": "Lift here — net energy gain worth aero trade",
+    "confidence": 0.75,
+    "processing_ms": 68.0,
+    "narration": "Proactive strategy — recover energy before the boost zone sequence."
+  },
+  "moment3": {
+    "lap": 36,
+    "corner": 4,
+    "rule": "cusum_soc_alarm",
+    "recommendation": "Energy drain elevated — monitor closely",
+    "confidence": 0.77,
+    "processing_ms": 71.0,
+    "narration": "CUSUM detects a shift in energy drain pattern before it becomes critical."
+  }
+}
