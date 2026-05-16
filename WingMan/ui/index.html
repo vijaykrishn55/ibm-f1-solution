@@ -3,183 +3,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WingMan - F1 Race Intelligence</title>
+  <title>WingMan -- Real-Time F1 Intelligence</title>
+  <meta name="description" content="WingMan real-time F1 energy and aero strategy dashboard for the 2026 season">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #0a0a0a; color: #f0f0f0;
-      font-family: 'Segoe UI', 'Inter', 'Roboto', monospace;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       height: 100vh; display: flex; flex-direction: column;
     }
 
     /* Header */
     header {
-      background: linear-gradient(90deg, #111 0%, #1a0a0a 100%);
-      padding: 10px 24px; display: flex; align-items: center; gap: 16px;
-      border-bottom: 2px solid #e10600;
+      background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 16px;
+      border-bottom: 1px solid #222;
     }
-    header h1 { font-size: 18px; color: #e10600; letter-spacing: 3px; font-weight: 700; }
-    .header-meta { display: flex; gap: 12px; align-items: center; }
+    header h1 {
+      font-size: 18px; color: #e10600; letter-spacing: 3px; font-weight: 700;
+    }
+    .header-meta {
+      display: flex; gap: 12px; align-items: center; margin-left: auto;
+    }
     #source-badge {
-      font-size: 10px; padding: 3px 10px; border-radius: 3px;
-      background: #222; color: #666; text-transform: uppercase; letter-spacing: 1px;
-      font-weight: 600;
+      font-size: 10px; padding: 3px 10px; border-radius: 10px;
+      background: #222; color: #666; text-transform: uppercase;
+      letter-spacing: 1px; font-weight: 600;
     }
-    #source-badge.torcs { background: #1a3a1a; color: #4caf50; border: 1px solid #2a5a2a; }
-    #source-badge.openf1 { background: #1a1a3a; color: #5c7cfa; border: 1px solid #2a2a5a; }
-
-    #latency-badge {
-      font-size: 10px; padding: 3px 10px; border-radius: 3px;
-      background: #1a2a1a; color: #4caf50; letter-spacing: 1px;
-    }
-    #latency-badge.slow { background: #3a2a1a; color: #ffc107; }
-    #latency-badge.critical { background: #3a1a1a; color: #e10600; }
-
+    #source-badge.torcs { background: #0d2a0d; color: #4caf50; border: 1px solid #1b5e20; }
+    #source-badge.openf1 { background: #1a1a2e; color: #5c6bc0; border: 1px solid #283593; }
     #connection-status {
-      margin-left: auto; font-size: 10px; color: #444;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; color: #555; display: flex; align-items: center; gap: 4px;
     }
-    #connection-status .dot { width: 6px; height: 6px; border-radius: 50%; background: #444; }
-    #connection-status.connected .dot { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
+    #connection-status.connected { color: #4caf50; }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #555; display: inline-block;
+    }
+    #connection-status.connected .status-dot { background: #4caf50; }
+    #latency-badge {
+      font-size: 10px; color: #444; padding: 2px 8px;
+      background: #111; border-radius: 8px;
+    }
 
     /* Panels */
     .panels { display: flex; flex: 1; overflow: hidden; }
     .panel {
-      flex: 1; padding: 16px 20px; border-right: 1px solid #1a1a1a;
+      flex: 1; padding: 20px; border-right: 1px solid #1a1a1a;
       overflow-y: auto; display: flex; flex-direction: column;
     }
     .panel:last-child { border-right: none; }
     .panel h2 {
-      font-size: 10px; color: #555; letter-spacing: 2px;
-      text-transform: uppercase; margin-bottom: 14px;
-      padding-bottom: 6px; border-bottom: 1px solid #1a1a1a;
+      font-size: 10px; color: #444; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 16px; font-weight: 600;
     }
 
     /* Engineer Panel */
     #recommendation {
-      font-size: 20px; color: #ffffff; line-height: 1.4;
-      min-height: 50px; margin-bottom: 12px; font-weight: 600;
+      font-size: 20px; color: #fff; line-height: 1.5;
+      min-height: 52px; margin-bottom: 12px; font-weight: 500;
     }
-    #reason { font-size: 12px; color: #777; margin-bottom: 14px; font-style: italic; }
-    #rule-badge {
-      display: inline-block; font-size: 9px; padding: 2px 8px; border-radius: 2px;
-      background: #1a1a2a; color: #5c7cfa; text-transform: uppercase;
-      letter-spacing: 1px; margin-bottom: 14px;
+    #reason {
+      font-size: 12px; color: #666; margin-bottom: 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
     }
 
-    .metric-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .metric-row { display: flex; gap: 10px; margin-bottom: 16px; }
     .metric {
-      background: #111; border-radius: 4px; padding: 8px 12px; flex: 1;
-      border: 1px solid #1a1a1a;
+      background: #111; border-radius: 6px; padding: 10px 14px;
+      flex: 1; border: 1px solid #1a1a1a;
     }
     .metric .label {
-      font-size: 9px; color: #444; text-transform: uppercase; letter-spacing: 1px;
+      font-size: 9px; color: #444; text-transform: uppercase;
+      letter-spacing: 1px; font-weight: 600;
     }
-    .metric .value { font-size: 18px; margin-top: 2px; font-weight: 600; }
-    .metric .value.green { color: #4caf50; }
+    .metric .value { font-size: 18px; margin-top: 4px; font-weight: 600; }
+    .metric .value.green  { color: #4caf50; }
     .metric .value.yellow { color: #ffc107; }
-    .metric .value.red { color: #e10600; }
+    .metric .value.red    { color: #e10600; }
 
     .bar-label {
       font-size: 9px; color: #444; margin-bottom: 4px;
-      text-transform: uppercase; letter-spacing: 1px;
+      text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
     }
     .bar-bg {
-      background: #111; border-radius: 3px; height: 6px; margin-bottom: 14px;
-      border: 1px solid #1a1a1a;
+      background: #111; border-radius: 4px; height: 6px;
+      margin-bottom: 16px; border: 1px solid #1a1a1a;
     }
     .bar-fill {
-      height: 6px; border-radius: 3px;
-      background: linear-gradient(90deg, #e10600, #ff4444);
-      transition: width 0.4s ease;
+      height: 6px; border-radius: 4px;
+      background: linear-gradient(90deg, #e10600, #ff6b35);
+      transition: width 0.3s ease;
     }
-    .bar-fill.high { background: linear-gradient(90deg, #4caf50, #66bb6a); }
-    .bar-fill.mid { background: linear-gradient(90deg, #ffc107, #ffca28); }
 
-    #alert-log { list-style: none; flex: 1; overflow-y: auto; }
-    #alert-log li {
-      font-size: 10px; color: #555; padding: 5px 0;
-      border-bottom: 1px solid #0f0f0f; display: flex; gap: 8px;
+    /* SOC bar */
+    .soc-bar-bg {
+      background: #111; border-radius: 4px; height: 10px;
+      margin-bottom: 16px; border: 1px solid #1a1a1a;
     }
-    #alert-log li .time { color: #333; min-width: 50px; }
+    .soc-bar-fill {
+      height: 10px; border-radius: 4px;
+      transition: width 0.3s ease, background 0.3s ease;
+    }
+    .soc-bar-fill.green  { background: linear-gradient(90deg, #2e7d32, #4caf50); }
+    .soc-bar-fill.yellow { background: linear-gradient(90deg, #f57f17, #ffc107); }
+    .soc-bar-fill.red    { background: linear-gradient(90deg, #b71c1c, #e10600); }
+
+    /* Alert log */
+    #alert-log { list-style: none; flex: 1; }
+    #alert-log li {
+      font-size: 11px; color: #555; padding: 6px 0;
+      border-bottom: 1px solid #0f0f0f;
+      display: flex; justify-content: space-between;
+    }
     #alert-log li .rule { color: #888; }
-    #alert-log li .conf { color: #555; min-width: 35px; text-align: right; }
-    #alert-log li.gridsense .rule { color: #ffc107; }
+    #alert-log li .lap { color: #444; font-size: 10px; }
+    #alert-log li .conf { color: #444; font-size: 10px; }
 
     /* Fan Panel */
     #fan-explanation {
-      font-size: 15px; color: #ccc; line-height: 1.6;
-      min-height: 50px; margin-bottom: 16px;
+      font-size: 15px; color: #ccc; line-height: 1.7;
+      min-height: 60px; margin-bottom: 20px;
     }
     #soc-plain {
-      font-size: 12px; color: #888; margin-bottom: 16px;
-      padding: 10px; background: #111; border-radius: 4px; border: 1px solid #1a1a1a;
+      font-size: 13px; color: #888; margin-bottom: 16px;
+      padding: 12px; background: #111; border-radius: 6px;
+      border: 1px solid #1a1a1a;
     }
     #granite-status {
-      font-size: 10px; color: #333; padding: 6px 10px;
-      background: #0f0f0f; border-radius: 3px; margin-bottom: 12px;
+      font-size: 11px; color: #444; padding: 8px 12px;
+      background: #0d0d0d; border-radius: 6px;
+      border: 1px solid #1a1a1a; margin-bottom: 12px;
     }
-    #granite-status.active { color: #5c7cfa; background: #1a1a2a; }
-
-    /* MPC Plan display */
-    #mpc-plan {
-      font-size: 10px; color: #555; margin-bottom: 12px;
+    #granite-status.active { color: #5c6bc0; border-color: #283593; }
+    #strategy-note {
+      font-size: 12px; color: #666; padding: 10px;
+      background: #111; border-radius: 6px;
+      border-left: 3px solid #e10600;
+      font-family: 'Consolas', 'Courier New', monospace;
     }
-    #mpc-plan .corner-plan {
-      display: inline-block; padding: 2px 6px; margin: 2px; border-radius: 2px;
-      background: #111; border: 1px solid #1a1a1a;
-    }
-    #mpc-plan .corner-plan.lift { background: #2a1a1a; color: #e10600; }
-    #mpc-plan .corner-plan.push { background: #1a2a1a; color: #4caf50; }
 
     /* GridSense Panel */
     #complaint-type {
-      font-size: 14px; color: #ffc107; margin-bottom: 6px;
+      font-size: 15px; color: #ffc107; margin-bottom: 8px;
       text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
     }
-    #complaint-type.high { color: #e10600; }
-    #complaint-type.none { color: #333; text-transform: none; font-weight: 400; }
-
-    #grid-recommendation { font-size: 12px; color: #ccc; margin-bottom: 14px; }
-
-    .gs-bar-bg {
-      background: #111; border-radius: 3px; height: 6px; margin-bottom: 14px;
-      border: 1px solid #1a1a1a;
+    #grid-recommendation {
+      font-size: 13px; color: #ccc; margin-bottom: 16px;
+      line-height: 1.5;
     }
-    .gs-bar-fill {
-      height: 6px; border-radius: 3px;
-      background: linear-gradient(90deg, #ffc107, #ff9800);
-      transition: width 0.4s ease;
+    .grid-confidence {
+      margin-bottom: 16px;
     }
-
-    #transcript-log { list-style: none; flex: 1; overflow-y: auto; }
+    #transcript-log { list-style: none; }
     #transcript-log li {
-      font-size: 10px; color: #555; padding: 5px 0;
+      font-size: 11px; color: #555; padding: 6px 0;
       border-bottom: 1px solid #0f0f0f;
     }
-    #transcript-log li .ts { color: #333; }
+
+    /* Priority badge */
+    .priority-badge {
+      display: inline-block; font-size: 9px; padding: 2px 6px;
+      border-radius: 8px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .priority-badge.high { background: #2d0000; color: #e10600; }
+    .priority-badge.mid  { background: #2d1f00; color: #ffc107; }
+    .priority-badge.low  { background: #1a1a1a; color: #666; }
+
+    /* Pulse animation for active alerts */
+    @keyframes pulse {
+      0%   { opacity: 1; }
+      50%  { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    .pulse { animation: pulse 1.5s ease-in-out infinite; }
   </style>
 </head>
 <body>
 
 <header>
   <h1>WINGMAN</h1>
+  <span id="source-badge">NO DATA</span>
   <div class="header-meta">
-    <span id="source-badge">NO DATA</span>
-    <span id="latency-badge">-- ms</span>
-  </div>
-  <div id="connection-status">
-    <span class="dot"></span>
-    <span>DISCONNECTED</span>
+    <span id="latency-badge">--ms</span>
+    <span id="connection-status"><span class="status-dot"></span> DISCONNECTED</span>
   </div>
 </header>
 
 <div class="panels">
 
   <!-- Engineer Panel -->
-  <div class="panel">
+  <div class="panel" id="engineer-panel">
     <h2>Engineer</h2>
-    <div id="rule-badge">--</div>
     <div id="recommendation">Waiting for telemetry...</div>
     <div id="reason"></div>
 
@@ -202,6 +218,11 @@
       </div>
     </div>
 
+    <div class="bar-label">SOC Level</div>
+    <div class="soc-bar-bg">
+      <div class="soc-bar-fill green" id="soc-bar" style="width:85%"></div>
+    </div>
+
     <div class="bar-label">Confidence</div>
     <div class="bar-bg"><div class="bar-fill" id="confidence-bar" style="width:0%"></div></div>
 
@@ -210,25 +231,23 @@
   </div>
 
   <!-- Fan Panel -->
-  <div class="panel">
+  <div class="panel" id="fan-panel">
     <h2>Fan View</h2>
     <div id="fan-explanation">Strategy analysis will appear here after Granite processes laps.</div>
     <div id="soc-plain">Battery status loading...</div>
-    <div id="granite-status">Granite: waiting for lap 10</div>
-
-    <div class="bar-label">MPC Energy Plan</div>
-    <div id="mpc-plan">MPC plan will appear here...</div>
+    <div id="granite-status">Granite AI: waiting for lap 10</div>
+    <div id="strategy-note"></div>
   </div>
 
   <!-- GridSense Panel -->
-  <div class="panel">
+  <div class="panel" id="gridsense-panel">
     <h2>GridSense -- Driver Radio</h2>
-    <div id="complaint-type" class="none">No complaint detected</div>
+    <div id="complaint-type">No complaint detected</div>
     <div id="grid-recommendation"></div>
-
-    <div class="bar-label">GridSense Confidence</div>
-    <div class="gs-bar-bg"><div class="gs-bar-fill" id="gs-confidence-bar" style="width:0%"></div></div>
-
+    <div class="grid-confidence">
+      <div class="bar-label">Complaint Confidence</div>
+      <div class="bar-bg"><div class="bar-fill" id="grid-confidence-bar" style="width:0%"></div></div>
+    </div>
     <div class="bar-label">Recent Transcripts</div>
     <ul id="transcript-log"></ul>
   </div>
@@ -236,9 +255,9 @@
 </div>
 
 <script>
-  // -- WebSocket connection --
+  // -- WebSocket with auto-reconnect --
   let ws;
-  let reconnectTimer;
+  let reconnectInterval = 2000;
   const seenAlerts = new Set();
   let alertCount = 0;
 
@@ -246,23 +265,21 @@
     ws = new WebSocket("ws://localhost:8001/ws");
 
     ws.onopen = () => {
-      const statusEl = document.getElementById("connection-status");
-      statusEl.innerHTML = '<span class="dot"></span><span>CONNECTED</span>';
-      statusEl.classList.add("connected");
-      console.log("[WS] Connected");
+      document.getElementById("connection-status").innerHTML =
+        '<span class="status-dot"></span> CONNECTED';
+      document.getElementById("connection-status").classList.add("connected");
+      reconnectInterval = 2000;
     };
 
     ws.onclose = () => {
-      const statusEl = document.getElementById("connection-status");
-      statusEl.innerHTML = '<span class="dot"></span><span>DISCONNECTED</span>';
-      statusEl.classList.remove("connected");
-      // Auto-reconnect after 3 seconds
-      reconnectTimer = setTimeout(connect, 3000);
+      document.getElementById("connection-status").innerHTML =
+        '<span class="status-dot"></span> RECONNECTING...';
+      document.getElementById("connection-status").classList.remove("connected");
+      setTimeout(connect, reconnectInterval);
+      reconnectInterval = Math.min(reconnectInterval * 1.5, 10000);
     };
 
-    ws.onerror = () => {
-      console.warn("[WS] Connection error");
-    };
+    ws.onerror = () => {};
 
     ws.onmessage = (event) => {
       const payload = JSON.parse(event.data);
@@ -270,9 +287,9 @@
       // Deduplication
       if (seenAlerts.has(payload.alert_id)) return;
       seenAlerts.add(payload.alert_id);
-      if (seenAlerts.size > 200) {
-        const iter = seenAlerts.values();
-        seenAlerts.delete(iter.next().value);
+      if (seenAlerts.size > 500) {
+        const first = seenAlerts.values().next().value;
+        seenAlerts.delete(first);
       }
 
       alertCount++;
@@ -289,64 +306,72 @@
 
   connect();
 
-  // -- Engineer panel update --
+  // -- Engineer Panel --
   function updateEngineer(p) {
-    document.getElementById("recommendation").textContent = p.recommendation;
-    document.getElementById("reason").textContent = p.reason;
-    document.getElementById("rule-badge").textContent = p.rule;
-    document.getElementById("priority-value").textContent = p.priority || "--";
+    const recEl = document.getElementById("recommendation");
+    recEl.textContent = p.recommendation;
 
-    // Confidence bar with colour
-    const confPct = Math.round(p.confidence * 100);
-    const bar = document.getElementById("confidence-bar");
-    bar.style.width = confPct + "%";
-    bar.className = "bar-fill" + (confPct > 75 ? " high" : confPct > 50 ? " mid" : "");
+    // Pulse on high priority
+    if (p.priority >= 8) {
+      recEl.classList.add("pulse");
+      setTimeout(() => recEl.classList.remove("pulse"), 3000);
+    }
 
-    // Fan explanation (from Granite)
+    document.getElementById("reason").textContent = p.reason || "";
+    document.getElementById("confidence-bar").style.width = (p.confidence * 100) + "%";
+
+    // Priority display
+    const priEl = document.getElementById("priority-value");
+    priEl.textContent = p.priority;
+    priEl.className = "value " + (p.priority >= 8 ? "red" : p.priority >= 5 ? "yellow" : "green");
+
+    // Latency badge
+    if (p._pipeline_latency_ms) {
+      document.getElementById("latency-badge").textContent =
+        p._pipeline_latency_ms.toFixed(1) + "ms";
+    }
+
+    // Fan explanation from Granite
     if (p.fan_explanation) {
       document.getElementById("fan-explanation").textContent = p.fan_explanation;
-      const gs = document.getElementById("granite-status");
-      gs.textContent = "Granite: last update at lap " + p.lap;
-      gs.className = "active";
+      document.getElementById("granite-status").textContent = "Granite AI: active";
+      document.getElementById("granite-status").classList.add("active");
     }
 
-    // MPC plan
-    if (p.mpc_plan) {
-      updateMPCPlan(p.mpc_plan);
+    // Strategy note
+    if (p.strategy_note) {
+      document.getElementById("strategy-note").textContent = p.strategy_note;
     }
 
-    // Alert log (max 10 entries)
+    // Alert log (max 8 entries)
     const log = document.getElementById("alert-log");
     const li = document.createElement("li");
-    const now = new Date();
-    const timeStr = now.getHours().toString().padStart(2,"0") + ":" +
-                    now.getMinutes().toString().padStart(2,"0") + ":" +
-                    now.getSeconds().toString().padStart(2,"0");
+    const priBadgeClass = p.priority >= 8 ? "high" : p.priority >= 5 ? "mid" : "low";
     li.innerHTML =
-      '<span class="time">' + timeStr + '</span>' +
-      '<span class="rule">' + p.rule + '</span>' +
-      '<span class="conf">' + confPct + '%</span>';
+      '<span class="lap">L' + p.lap + ' C' + p.corner_id + '</span> ' +
+      '<span class="rule">' + p.rule + '</span> ' +
+      '<span class="priority-badge ' + priBadgeClass + '">P' + p.priority + '</span> ' +
+      '<span class="conf">' + Math.round(p.confidence * 100) + '%</span>';
     log.insertBefore(li, log.firstChild);
-    if (log.children.length > 10) log.removeChild(log.lastChild);
+    if (log.children.length > 8) log.removeChild(log.lastChild);
   }
 
-  // -- GridSense panel update --
+  // -- GridSense Panel --
   function updateGridSense(p) {
     const typeEl = document.getElementById("complaint-type");
-    const cleanType = p.rule.replace("gridsense_", "").replace(/_/g, " ");
-    typeEl.textContent = cleanType;
-    typeEl.className = (p.priority >= 9) ? "high" : "";
+    typeEl.textContent = p.rule.replace("gridsense_", "").replace(/_/g, " ");
+
+    // Color by priority
+    if (p.priority >= 8) typeEl.style.color = "#e10600";
+    else if (p.priority >= 5) typeEl.style.color = "#ffc107";
+    else typeEl.style.color = "#4caf50";
 
     document.getElementById("grid-recommendation").textContent = p.recommendation;
+    document.getElementById("grid-confidence-bar").style.width = (p.confidence * 100) + "%";
 
-    // GridSense confidence bar
-    const confPct = Math.round(p.confidence * 100);
-    document.getElementById("gs-confidence-bar").style.width = confPct + "%";
-
-    // Transcript log
     const log = document.getElementById("transcript-log");
     const li = document.createElement("li");
-    li.innerHTML = '<span class="ts">Lap ' + p.lap + ':</span> ' + p.reason;
+    li.textContent = "Lap " + p.lap + ": " + (p.reason || p.recommendation);
     log.insertBefore(li, log.firstChild);
     if (log.children.length > 5) log.removeChild(log.lastChild);
   }
@@ -357,58 +382,34 @@
     const soc = p.soc_estimated;
     const socEl = document.getElementById("soc-value");
     socEl.textContent = Math.round(soc * 100) + "%";
-    socEl.className = "value " + (soc > 0.7 ? "green" : soc > 0.4 ? "yellow" : "red");
+    const socClass = soc > 0.7 ? "green" : soc > 0.4 ? "yellow" : "red";
+    socEl.className = "value " + socClass;
 
-    document.getElementById("corner-value").textContent = p.corner_id || "--";
-    document.getElementById("lap-value").textContent = p.lap || "--";
+    // SOC bar
+    const socBar = document.getElementById("soc-bar");
+    socBar.style.width = Math.round(soc * 100) + "%";
+    socBar.className = "soc-bar-fill " + socClass;
+
+    document.getElementById("corner-value").textContent = p.corner_id;
+    document.getElementById("lap-value").textContent = p.lap;
 
     // Source badge
     const badge = document.getElementById("source-badge");
-    const src = (p.data_source || "unknown").toUpperCase();
-    badge.textContent = src;
-    if (p.data_source === "torcs") {
-      badge.className = "torcs";
-    } else if (p.data_source === "openf1") {
-      badge.className = "openf1";
-    } else {
-      badge.className = "";
-    }
-
-    // Latency badge
-    if (p.pipeline_latency_ms !== undefined) {
-      const latBadge = document.getElementById("latency-badge");
-      const lat = Math.round(p.pipeline_latency_ms * 10) / 10;
-      latBadge.textContent = lat + " ms";
-      if (lat > 100) {
-        latBadge.className = "critical";
-      } else if (lat > 50) {
-        latBadge.className = "slow";
-      } else {
-        latBadge.className = "";
-      }
-    }
+    const src = (p.data_source || "unknown").toLowerCase();
+    badge.textContent = src.toUpperCase();
+    if (src === "torcs") badge.className = "torcs";
+    else if (src === "openf1") badge.className = "openf1";
+    else badge.className = "";
 
     // SOC plain text (fan panel)
     const plains = {
       high:   "Battery healthy -- full boost available",
       mid:    "Battery at " + Math.round(soc * 100) + "% -- use boost selectively",
       low:    "Battery low at " + Math.round(soc * 100) + "% -- limit boost usage",
-      danger: "Battery critical at " + Math.round(soc * 100) + "% -- no boost available"
+      danger: "Battery CRITICAL at " + Math.round(soc * 100) + "% -- no boost available"
     };
     const key = soc > 0.7 ? "high" : soc > 0.5 ? "mid" : soc > 0.3 ? "low" : "danger";
     document.getElementById("soc-plain").textContent = plains[key];
-  }
-
-  // -- MPC Plan display --
-  function updateMPCPlan(plan) {
-    const el = document.getElementById("mpc-plan");
-    let html = "";
-    for (const [corner, lift] of Object.entries(plan)) {
-      const cls = lift > 0.5 ? "lift" : "push";
-      html += '<span class="corner-plan ' + cls + '">C' + corner + ': ' +
-              Math.round(lift * 100) + '%</span>';
-    }
-    el.innerHTML = html || "No plan available";
   }
 </script>
 

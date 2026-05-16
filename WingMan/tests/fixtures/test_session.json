@@ -2,91 +2,91 @@
   "circuit": "bahrain",
   "session_type": "race",
   "driver": "VER",
-  "created_at": 1778658703.0376666,
+  "created_at": 1778956087.9335513,
   "laps": [
     {
       "lap": 1,
       "avg_soc": 0.83,
       "alerts_this_lap": 1,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0376666
+      "recorded_at": 1778956087.9335513
     },
     {
       "lap": 2,
       "avg_soc": 0.81,
       "alerts_this_lap": 2,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0376666
+      "recorded_at": 1778956087.9335513
     },
     {
       "lap": 3,
       "avg_soc": 0.79,
       "alerts_this_lap": 0,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0376666
+      "recorded_at": 1778956087.9335513
     },
     {
       "lap": 4,
       "avg_soc": 0.77,
       "alerts_this_lap": 1,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0376666
+      "recorded_at": 1778956087.9335513
     },
     {
       "lap": 5,
       "avg_soc": 0.75,
       "alerts_this_lap": 2,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0376666
+      "recorded_at": 1778956087.9335513
     },
     {
       "lap": 6,
       "avg_soc": 0.73,
       "alerts_this_lap": 0,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0391319
+      "recorded_at": 1778956087.9345775
     },
     {
       "lap": 7,
       "avg_soc": 0.71,
       "alerts_this_lap": 1,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0391319
+      "recorded_at": 1778956087.9345775
     },
     {
       "lap": 8,
       "avg_soc": 0.69,
       "alerts_this_lap": 2,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0391319
+      "recorded_at": 1778956087.9345775
     },
     {
       "lap": 9,
       "avg_soc": 0.67,
       "alerts_this_lap": 0,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0391319
+      "recorded_at": 1778956087.9345775
     },
     {
       "lap": 10,
       "avg_soc": 0.65,
       "alerts_this_lap": 1,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0391319
+      "recorded_at": 1778956087.9345775
     },
     {
       "lap": 11,
       "avg_soc": 0.63,
       "alerts_this_lap": 2,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0411587
+      "recorded_at": 1778956087.9355772
     },
     {
       "lap": 12,
       "avg_soc": 0.61,
       "alerts_this_lap": 0,
       "key_decision": "safe_default",
-      "recorded_at": 1778658703.0411587
+      "recorded_at": 1778956087.9355772
     }
   ],
   "alerts_fired": [
@@ -94,13 +94,13 @@
       "rule": "soc_danger_alert",
       "lap": 7,
       "confidence": 0.81,
-      "stored_at": 1778658703.0411587
+      "stored_at": 1778956087.9355772
     },
     {
       "rule": "safety_car_recharge",
       "lap": 11,
       "confidence": 0.9,
-      "stored_at": 1778658703.0411587
+      "stored_at": 1778956087.9355772
     }
   ],
   "granite_outputs": [],
