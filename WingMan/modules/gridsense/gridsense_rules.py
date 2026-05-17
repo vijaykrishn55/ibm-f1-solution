@@ -28,17 +28,29 @@ class GridSenseRules:
         self.context_forge = context_forge
 
     def evaluate(self, result: CorrelationResult) -> Optional[dict]:
-        state_vector = {}
-        if self.session_state and hasattr(self.session_state, 'latest') and self.session_state.latest:
-            state_vector = self.session_state.latest
-        elif isinstance(self.session_state, dict):
-            state_vector = self.session_state
+        soc = 1.0
+        try:
+            from state.session_state import session_state
+            throttle = session_state.get("throttle", 0.5)
+            speed = session_state.get("speed", 200)
+            brake = session_state.get("brake", False)
+            soc = session_state.get("soc_estimated", 0.5)
+        except Exception as e:
+            # Fallback to mock dictionary so demo can still run
+            if self.session_state and hasattr(self.session_state, 'latest') and self.session_state.latest:
+                state_vector = self.session_state.latest
+            elif isinstance(self.session_state, dict):
+                state_vector = self.session_state
+            else:
+                state_vector = {}
+            soc = state_vector.get("soc_estimated", 1.0)
+            throttle = state_vector.get("throttle", 0.5)
+            speed = state_vector.get("speed", 200)
+            brake = state_vector.get("brake", False)
 
-        soc_estimated = state_vector.get("soc_estimated", 1.0)
-        
         alert = None
         # Rule 2: radio_energy_confirmed
-        if result.complaint_type == "energy" and soc_estimated < 0.35:
+        if result.complaint_type == "energy" and soc < 0.35:
             alert = {
                 "alert_id": str(uuid.uuid4()),
                 "timestamp": result.timestamp,
@@ -76,6 +88,17 @@ class GridSenseRules:
                 "source": "gridsense",
                 "fan_explanation": ""
             }
+
+        if alert:
+            try:
+                from output.websocket_server import broadcast
+                import asyncio
+                asyncio.create_task(broadcast(alert))
+            except Exception as e:
+                print(f"[gridsense] broadcast unavailable: {e} — alert: {alert}")
+            
+            # Requested terminal output
+            print(f"[gridsense] Alert broadcast: {alert['rule']} confidence={alert['confidence']}")
 
         return alert
 

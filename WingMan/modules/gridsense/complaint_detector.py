@@ -130,7 +130,7 @@ class ComplaintDetector:
         self.state_vector["complaint_detected"] = complaint_detected
         self.state_vector["complaint_type"] = complaint_type if not negated else "none"
 
-        return ComplaintResult(
+        result = ComplaintResult(
             driver=event.driver,
             timestamp=event.timestamp,
             transcript=event.transcript,
@@ -141,6 +141,31 @@ class ComplaintDetector:
             negated=negated,
             lap_mentioned=lap
         )
+
+        if result.complaint_detected:
+            try:
+                from state.session_state import session_state
+                session_state["radio_transcript"] = result.transcript
+                session_state["complaint_detected"] = result.complaint_detected
+                session_state["complaint_type"] = result.complaint_type
+            except Exception as e:
+                logger.warning(f"[gridsense] session_state unavailable: {e}")
+
+            try:
+                from slow_path.context_forge import context_forge
+                context_forge.add_alert({
+                    "source": "gridsense",
+                    "type": "radio_complaint",
+                    "driver": result.driver,
+                    "timestamp": result.timestamp,
+                    "complaint_type": result.complaint_type,
+                    "confidence": result.confidence,
+                    "transcript": result.transcript,
+                })
+            except Exception as e:
+                logger.warning(f"[gridsense] context_forge unavailable: {e}")
+
+        return result
 
     async def run(self, in_queue: asyncio.Queue, out_queue: asyncio.Queue):
         while True:
