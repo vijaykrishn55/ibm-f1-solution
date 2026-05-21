@@ -28,8 +28,27 @@ class ComplaintResult:
     lap_mentioned: Optional[int] = None
 
 class ComplaintDetector:
-    def __init__(self, state_vector: dict = None):
+    def __init__(self, state_vector: dict = None, context_forge=None):
         self.state_vector = state_vector if state_vector is not None else {}
+        self.context_forge = context_forge
+
+    def _write_state_vector(self, result: ComplaintResult):
+        self.state_vector["radio_transcript"] = result.transcript
+        self.state_vector["complaint_detected"] = result.complaint_detected
+        self.state_vector["complaint_type"] = result.complaint_type
+
+    def _write_context_forge(self, result: ComplaintResult):
+        if hasattr(self, 'context_forge') and self.context_forge:
+            if hasattr(self.context_forge, 'add_alert'):
+                self.context_forge.add_alert({
+                    "source": "gridsense",
+                    "type": "radio_complaint",
+                    "driver": result.driver,
+                    "timestamp": result.timestamp,
+                    "complaint_type": result.complaint_type,
+                    "confidence": result.confidence,
+                    "transcript": result.transcript,
+                })
 
     def _extract_lap(self, transcript: str) -> Optional[int]:
         match = re.search(r'\blap\s+(\d+)\b', transcript, re.IGNORECASE)
@@ -125,11 +144,6 @@ class ComplaintDetector:
 
         lap = self._extract_lap(transcript)
 
-        # Update state vector
-        self.state_vector["radio_transcript"] = event.transcript
-        self.state_vector["complaint_detected"] = complaint_detected
-        self.state_vector["complaint_type"] = complaint_type if not negated else "none"
-
         result = ComplaintResult(
             driver=event.driver,
             timestamp=event.timestamp,
@@ -142,28 +156,10 @@ class ComplaintDetector:
             lap_mentioned=lap
         )
 
-        if result.complaint_detected:
-            try:
-                from state.session_state import session_state
-                session_state["radio_transcript"] = result.transcript
-                session_state["complaint_detected"] = result.complaint_detected
-                session_state["complaint_type"] = result.complaint_type
-            except Exception as e:
-                pass
+        self._write_state_vector(result)
 
-            try:
-                from slow_path.context_forge import context_forge
-                context_forge.add_alert({
-                    "source": "gridsense",
-                    "type": "radio_complaint",
-                    "driver": result.driver,
-                    "timestamp": result.timestamp,
-                    "complaint_type": result.complaint_type,
-                    "confidence": result.confidence,
-                    "transcript": result.transcript,
-                })
-            except Exception as e:
-                pass
+        if result.complaint_detected:
+            self._write_context_forge(result)
 
         return result
 
