@@ -93,9 +93,13 @@ class GridSenseRules:
             try:
                 from output.websocket_server import broadcast
                 import asyncio
-                asyncio.create_task(broadcast(alert))
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(broadcast(alert))
+                except RuntimeError:
+                    pass
             except Exception as e:
-                print(f"[gridsense] broadcast unavailable: {e} — alert: {alert}")
+                pass
             
             # Requested terminal output
             print(f"[gridsense] Alert broadcast: {alert['rule']} confidence={alert['confidence']}")

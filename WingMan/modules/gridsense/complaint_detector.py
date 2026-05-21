@@ -149,7 +149,7 @@ class ComplaintDetector:
                 session_state["complaint_detected"] = result.complaint_detected
                 session_state["complaint_type"] = result.complaint_type
             except Exception as e:
-                logger.warning(f"[gridsense] session_state unavailable: {e}")
+                pass
 
             try:
                 from slow_path.context_forge import context_forge
@@ -163,7 +163,7 @@ class ComplaintDetector:
                     "transcript": result.transcript,
                 })
             except Exception as e:
-                logger.warning(f"[gridsense] context_forge unavailable: {e}")
+                pass
 
         return result
 
