@@ -54,16 +54,6 @@ def get_stats():
     }
 
 
-@app.post("/internal/alert")
-async def receive_internal_alert(alert: dict):
-    """
-    Internal endpoint: pipeline posts alerts here -> broadcast to WS clients.
-    Used by run_torcs.py and run_pipeline.py to push alerts without a shared queue.
-    """
-    await broadcast(alert)
-    return {"status": "ok", "clients": len(connected_clients)}
-
-
 async def broadcast(payload: dict):
     """Push a payload to all connected UI clients with deduplication."""
     global _broadcast_count

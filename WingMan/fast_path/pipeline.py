@@ -15,16 +15,8 @@
 from __future__ import annotations
 
 import asyncio
-import sys
-import os
 import time
 from typing import Callable
-
-# Ensure WingMan root is on sys.path so absolute imports work when this file
-# is run directly: `python fast_path/pipeline.py` from the WingMan/ directory.
-_WINGMAN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _WINGMAN_ROOT not in sys.path:
-    sys.path.insert(0, _WINGMAN_ROOT)
 
 from state.schema        import new_state, validate_state
 from state.kalman        import BatterySOCEstimator
@@ -164,6 +156,8 @@ async def _mock_producer(queue: asyncio.Queue):
     Replays mock state vectors into the pipeline at 4 Hz (every 250ms).
     Uses mock_state_vectors.py so this can run without Person A's server.
     """
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
     from tests.mock_state_vectors import (
         NORMAL, SOC_DANGER, LIFT_NOT_WORTH, GOOD_RECHARGE,
         SAFETY_CAR, STALE_DATA, TORCS_STATE,
@@ -184,6 +178,9 @@ async def _mock_producer(queue: asyncio.Queue):
 
 
 async def _main():
+    import os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
     input_q  = asyncio.Queue()
     output_q = asyncio.Queue()
 

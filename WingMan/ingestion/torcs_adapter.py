@@ -10,7 +10,6 @@ Day 2 additions:
 """
 
 import asyncio
-import math
 import time
 import sys
 import os
@@ -19,72 +18,13 @@ sys.path.insert(0, ".")
 from state.schema import new_state
 
 # Path to gym_torcs folder — adjust if different on your machine
-TORCS_PATH = r"E:\ibm\ibm f1 solution\gym_torcs"
+TORCS_PATH = r"C:\RaceYourCode\gym_torcs"
 sys.path.insert(0, TORCS_PATH)
 
 TRACK_LENGTH = 3773.57   # Alpine-2 default. Update per track.
 MAX_FUEL     = 94.0      # TORCS default fuel capacity in litres
 NUM_CORNERS  = 15        # Bucket track into this many corner zones
 
-
-# ── Layer 1: Autopilot ──────────────────────────────────────────────────────
-
-def drive_autopilot(client, accel_modifier: float = 1.0) -> None:
-    """
-    Minimal autopilot that keeps the TORCS car driving while WingMan observes.
-
-    Mirrors snakeoil3_gym's tested drive_example() exactly:
-      - Steering gain 15/pi  (matches drive_example — 10/pi was too weak)
-      - Traction Control System (TCS) — prevents wheel-spin spin-outs
-      - 6-speed automatic gearbox  (speedX thresholds in km/h)
-      - target_speed = 300 km/h cap
-
-    The accel_modifier (0.0–1.0) is injected by WingMan's control_mapper
-    AFTER TCS so TCS can still cut power if wheels are spinning.
-    """
-    S, R = client.S.d, client.R.d
-
-    target_speed = 300  # km/h — matches snakeoil3_gym drive_example
-
-    # ── Steering: align to track axis + push toward centre ──
-    R["steer"]  = float(S.get("angle", 0)) * 15.0 / math.pi
-    R["steer"] -= float(S.get("trackPos", 0)) * 0.10
-
-    # ── Throttle: cruise toward target speed, back off in corners ──
-    speed = float(S.get("speedX", 0))   # already km/h
-    if speed < target_speed - abs(R["steer"] * 50.0):
-        R["accel"] = min(1.0, R.get("accel", 0.2) + 0.01)
-    else:
-        R["accel"] = max(0.0, R.get("accel", 0.2) - 0.01)
-    if speed < 10:
-        R["accel"] = min(1.0, R["accel"] + 1.0 / (speed + 0.1))
-
-    # ── Traction Control System (TCS) — prevents rear-wheel spin-outs ──
-    # Compares rear (index 2,3) vs front (index 0,1) wheel spin velocity.
-    # If rear spins >5 rad/s faster than front → wheels are slipping → cut throttle.
-    wheel_spin = S.get("wheelSpinVel", [0.0, 0.0, 0.0, 0.0])
-    if len(wheel_spin) >= 4:
-        rear_vs_front = (wheel_spin[2] + wheel_spin[3]) - (wheel_spin[0] + wheel_spin[1])
-        if rear_vs_front > 5.0:
-            R["accel"] -= 0.2
-
-    # ── WingMan energy modifier applied after TCS ──
-    R["accel"] = max(0.0, min(1.0, R["accel"] * accel_modifier))
-
-    # ── No autonomous braking — lift throttle handles corners ──
-    R["brake"] = 0.0
-
-    # ── Automatic gearbox (thresholds in km/h, matches drive_example) ──
-    gear = 1
-    if speed > 50:  gear = 2
-    if speed > 80:  gear = 3
-    if speed > 110: gear = 4
-    if speed > 140: gear = 5
-    if speed > 170: gear = 6
-    R["gear"] = gear
-
-
-# ── Helper ───────────────────────────────────────────────────────────────────
 
 def get_corner_id(dist_from_start: float) -> int:
     """Divide track into NUM_CORNERS equal buckets."""
@@ -97,7 +37,7 @@ def torcs_to_state(sensors: dict, prev_soc: float = 0.85) -> dict:
     Convert TORCS sensor dict to WingMan state vector.
 
     TORCS sensor keys (from snakeoil3_gym.py):
-        speedX, speedY, speedZ   — speed components in km/h (TORCS native unit)
+        speedX, speedY, speedZ   — speed components in m/s
         accel                    — 0.0 to 1.0
         brake                    — 0.0 to 1.0
         gear                     — current gear int
@@ -112,8 +52,9 @@ def torcs_to_state(sensors: dict, prev_soc: float = 0.85) -> dict:
     """
     now = time.time()
 
-    # Speed: TORCS speedX is already in km/h — do NOT multiply by 3.6
-    speed_kmh = abs(float(sensors.get("speedX", 0)))
+    # Speed: TORCS gives m/s components, convert to km/h
+    speed_ms = float(sensors.get("speedX", 0))
+    speed_kmh = abs(speed_ms) * 3.6
 
     throttle  = float(sensors.get("accel", 0))
     brake_val = float(sensors.get("brake", 0))
@@ -166,7 +107,6 @@ async def stream(queue: asyncio.Queue, interval: float = 0.25):
     Day 2: graceful disconnect detection and reconnection.
     """
     try:
-        # pyrefly: ignore [missing-import]
         import snakeoil3_gym as snakeoil
     except ImportError:
         print(f"[TORCS] snakeoil3_gym not found at {TORCS_PATH}")
@@ -190,11 +130,6 @@ async def stream(queue: asyncio.Queue, interval: float = 0.25):
                     client.get_servers_input()
                     sensors = client.S.d
                     state   = torcs_to_state(sensors, prev_soc=_prev_soc)
-
-                    # ── Drive the car (MUST call respond_to_server every tick) ──
-                    from ingestion import control_mapper
-                    drive_autopilot(client, accel_modifier=control_mapper.get_modifier())
-                    client.respond_to_server()
 
                     # Track SOC for energy_delta calculation
                     _prev_soc = state["soc_raw"]
