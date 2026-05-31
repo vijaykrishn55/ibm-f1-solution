@@ -1,30 +1,36 @@
 {
   "circuit": "bahrain",
-  "corners": 15,
-  "boost_zone_corners": [11, 12],
-  "soc_danger_threshold": 0.25,
-  "corner_thresholds": {
-    "1":  {"net_lift_value": -0.02, "lift_energy_gain": 0.12, "lift_aero_cost_s": 0.14},
-    "4":  {"net_lift_value":  0.08, "lift_energy_gain": 0.18, "lift_aero_cost_s": 0.10},
-    "10": {"net_lift_value":  0.15, "lift_energy_gain": 0.22, "lift_aero_cost_s": 0.07},
-    "11": {"net_lift_value":  0.03, "lift_energy_gain": 0.09, "lift_aero_cost_s": 0.06},
-    "14": {"net_lift_value":  0.11, "lift_energy_gain": 0.19, "lift_aero_cost_s": 0.08}
+  "track_length_m": 5412,
+  "num_corners": 15,
+
+  "corner_map": [
+    {"id": 1,  "name": "T1",  "direction": "right", "x_min": -200, "x_max":  200, "y_min": -100, "y_max":  400},
+    {"id": 2,  "name": "T2",  "direction": "left",  "x_min": -600, "x_max": -100, "y_min":  200, "y_max":  700},
+    {"id": 3,  "name": "T3",  "direction": "right", "x_min": -900, "x_max": -400, "y_min":  100, "y_max":  500},
+    {"id": 4,  "name": "T4",  "direction": "right", "x_min":-1200, "x_max": -700, "y_min": -300, "y_max":  200},
+    {"id": 5,  "name": "T5",  "direction": "left",  "x_min":-1100, "x_max": -600, "y_min": -700, "y_max": -200},
+    {"id": 6,  "name": "T6",  "direction": "right", "x_min": -900, "x_max": -300, "y_min":-1100, "y_max": -600},
+    {"id": 7,  "name": "T7",  "direction": "right", "x_min": -400, "x_max":  100, "y_min":-1300, "y_max": -800},
+    {"id": 8,  "name": "T8",  "direction": "left",  "x_min":  200, "x_max":  700, "y_min":-1100, "y_max": -600},
+    {"id": 9,  "name": "T9",  "direction": "right", "x_min":  500, "x_max": 1000, "y_min": -700, "y_max": -200},
+    {"id": 10, "name": "T10", "direction": "left",  "x_min":  700, "x_max": 1200, "y_min": -200, "y_max":  300},
+    {"id": 11, "name": "T11", "direction": "right", "x_min":  600, "x_max": 1100, "y_min":  400, "y_max":  900},
+    {"id": 12, "name": "T12", "direction": "left",  "x_min":  200, "x_max":  700, "y_min":  700, "y_max": 1200},
+    {"id": 13, "name": "T13", "direction": "right", "x_min": -200, "x_max":  300, "y_min":  900, "y_max": 1400},
+    {"id": 14, "name": "T14", "direction": "left",  "x_min": -600, "x_max": -100, "y_min":  700, "y_max": 1200},
+    {"id": 15, "name": "T15", "direction": "right", "x_min": -500, "x_max":    0, "y_min":  300, "y_max":  800}
+  ],
+
+  "thresholds": {
+    "soc_danger": 0.25,
+    "soc_recharge_target": 0.60,
+    "boost_zone_corners": [10, 11],
+    "drs_zones_after_corners": [11, 15]
   },
-  "corner_distances": {
-    "1":  {"dist_min": 0,    "dist_max": 400},
-    "2":  {"dist_min": 400,  "dist_max": 700},
-    "3":  {"dist_min": 700,  "dist_max": 950},
-    "4":  {"dist_min": 950,  "dist_max": 1200},
-    "5":  {"dist_min": 1200, "dist_max": 1450},
-    "6":  {"dist_min": 1450, "dist_max": 1650},
-    "7":  {"dist_min": 1650, "dist_max": 1900},
-    "8":  {"dist_min": 1900, "dist_max": 2150},
-    "9":  {"dist_min": 2150, "dist_max": 2400},
-    "10": {"dist_min": 2400, "dist_max": 2650},
-    "11": {"dist_min": 2650, "dist_max": 2900},
-    "12": {"dist_min": 2900, "dist_max": 3150},
-    "13": {"dist_min": 3150, "dist_max": 3400},
-    "14": {"dist_min": 3400, "dist_max": 3700},
-    "15": {"dist_min": 3700, "dist_max": 5412}
+
+  "net_lift_value": {
+    "1":  -0.02, "2":  0.08, "3": 0.05, "4":  0.09, "5":  0.04,
+    "6":   0.07, "7":  0.03, "8": 0.06, "9": -0.01, "10": 0.11,
+    "11": -0.03, "12": 0.07, "13": 0.04, "14": 0.08, "15": 0.02
   }
 }

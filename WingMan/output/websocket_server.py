@@ -1,164 +1,120 @@
-"""WebSocket Server: pushes alert payloads to connected UI clients.
+"""WebSocket server — broadcasts WingMan alerts to the dashboard UI.
 
-Day 2 additions:
-  - merge_queues(): merge VoltEdge and GridSense alert streams
-  - run_broadcast_loop(): main async loop consuming from output queue
-  - CORS-enabled static file serving for UI
-  - Graceful client disconnect handling
-  - Alert deduplication by alert_id
-  - Stats endpoint for monitoring
+Serves:
+  ws://localhost:8001/ws      ← WebSocket endpoint (alerts JSON)
+  http://localhost:8001/ui/   ← Static UI (ui/index.html)
+
+Run: python -m output.websocket_server
 """
 
 import asyncio
 import json
-import time
+import os
+import sys
+from pathlib import Path
+
+# Force UTF-8 on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+import uvicorn
 
-app = FastAPI(title="WingMan WebSocket Server")
+app = FastAPI()
 
-# Mount the UI folder so index.html is served at http://localhost:8001/ui/index.html
-app.mount("/ui", StaticFiles(directory="ui"), name="ui")
+# Serve the ui/ folder as static files
+_ui_dir = Path(__file__).parent.parent / "ui"
+if _ui_dir.exists():
+    app.mount("/ui", StaticFiles(directory=str(_ui_dir), html=True), name="ui")
 
-connected_clients: list[WebSocket] = []
-_recent_alert_ids: list[str] = []      # ring buffer for dedup
-_broadcast_count: int = 0
-_start_time: float = time.time()
+# ── Connection manager ────────────────────────────────────────────────────────
+
+class _Manager:
+    def __init__(self):
+        self._connections: list[WebSocket] = []
+
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self._connections.append(ws)
+        print(f"[WS] Client connected  ({len(self._connections)} total)")
+
+    def disconnect(self, ws: WebSocket):
+        self._connections.remove(ws)
+        print(f"[WS] Client disconnected ({len(self._connections)} remaining)")
+
+    async def broadcast(self, payload: dict):
+        if not self._connections:
+            return
+        msg = json.dumps(payload)
+        dead = []
+        for ws in self._connections:
+            try:
+                await ws.send_text(msg)
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self._connections.remove(ws)
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket):
-    await ws.accept()
-    connected_clients.append(ws)
-    print(f"[WS] Client connected. Total: {len(connected_clients)}")
-    try:
-        while True:
-            await ws.receive_text()   # Keep connection alive
-    except WebSocketDisconnect:
-        connected_clients.remove(ws)
-        print(f"[WS] Client disconnected. Total: {len(connected_clients)}")
-    except Exception:
-        if ws in connected_clients:
-            connected_clients.remove(ws)
+_manager = _Manager()
+_recent_alert_ids = set()
 
 
-@app.get("/stats")
-def get_stats():
-    """Stats endpoint for monitoring."""
-    return {
-        "connected_clients": len(connected_clients),
-        "total_broadcasts": _broadcast_count,
-        "uptime_seconds": round(time.time() - _start_time, 1),
-        "recent_alert_ids": len(_recent_alert_ids),
-    }
-
+# ── Public API (called from run_openf1.py) ────────────────────────────────────
 
 async def broadcast(payload: dict):
-    """Push a payload to all connected UI clients with deduplication."""
-    global _broadcast_count
+    """Broadcast an alert dict to all connected dashboard clients."""
+    aid = payload.get("alert_id")
+    if aid:
+        if aid in _recent_alert_ids:
+            return
+        _recent_alert_ids.add(aid)
+    await _manager.broadcast(payload)
 
-    # Deduplicate by alert_id
-    alert_id = payload.get("alert_id", "")
-    if alert_id and alert_id in _recent_alert_ids:
-        return
-    if alert_id:
-        _recent_alert_ids.append(alert_id)
-        if len(_recent_alert_ids) > 200:
-            _recent_alert_ids.pop(0)
 
-    if not connected_clients:
-        return
+async def merge_queues(q1: asyncio.Queue, q2: asyncio.Queue):
+    """Asynchronously merge two queues and yield (source, item) tuples."""
+    while True:
+        t1 = asyncio.create_task(q1.get())
+        t2 = asyncio.create_task(q2.get())
 
-    message = json.dumps(payload)
-    dead = []
-    for client in connected_clients:
         try:
-            await client.send_text(message)
-        except Exception:
-            dead.append(client)
-    for client in dead:
-        connected_clients.remove(client)
+            done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
 
-    _broadcast_count += 1
+            for t in pending:
+                t.cancel()
+
+            for t in done:
+                item = t.result()
+                source = item.get("source_module") or item.get("source") or "voltedge"
+                yield source, item
+        except asyncio.CancelledError:
+            t1.cancel()
+            t2.cancel()
+            raise
 
 
-async def merge_queues(*queues: asyncio.Queue):
-    """
-    Merge multiple async queues into a single stream.
-    Yields items from whichever queue has data available first.
+# ── WebSocket endpoint ────────────────────────────────────────────────────────
 
-    Day 2: Used to merge VoltEdge output_queue and GridSense output_queue
-    so both flow through the same alert_builder -> broadcast -> UI path.
-    """
-    async def _reader(q: asyncio.Queue, out: asyncio.Queue, name: str):
-        while True:
-            item = await q.get()
-            await out.put((name, item))
-            q.task_done()
-
-    merged = asyncio.Queue()
-    tasks = []
-    names = ["voltedge", "gridsense", "extra_1", "extra_2"]
-
-    for i, q in enumerate(queues):
-        name = names[i] if i < len(names) else f"source_{i}"
-        task = asyncio.create_task(_reader(q, merged, name))
-        tasks.append(task)
-
+@app.websocket("/ws")
+async def ws_endpoint(ws: WebSocket):
+    await _manager.connect(ws)
     try:
         while True:
-            source_name, item = await merged.get()
-            yield source_name, item
-    finally:
-        for task in tasks:
-            task.cancel()
+            await ws.receive_text()   # keep connection alive; we only push
+    except WebSocketDisconnect:
+        _manager.disconnect(ws)
 
 
-async def run_broadcast_loop(
-    output_queue: asyncio.Queue,
-    gridsense_queue: asyncio.Queue = None,
-    tts_fn=None,
-    get_state_fn=None,
-):
-    """
-    Main broadcast loop. Consumes alerts from one or more output queues,
-    packages them via alert_builder, broadcasts to WebSocket clients,
-    and optionally triggers TTS.
+@app.get("/")
+async def root():
+    return {"status": "WingMan WS server running", "ui": "/ui/index.html"}
 
-    Day 2: Merges VoltEdge and GridSense queues.
-    """
-    from output.alert_builder import build_payload
 
-    queues = [output_queue]
-    if gridsense_queue is not None:
-        queues.append(gridsense_queue)
+# ── Entry point ───────────────────────────────────────────────────────────────
 
-    print(f"[WS] Broadcast loop started with {len(queues)} queue(s)")
-
-    if len(queues) == 1:
-        # Single queue mode (Day 1 compatible)
-        while True:
-            alert = await output_queue.get()
-            state = get_state_fn() if get_state_fn else {}
-            payload = build_payload(alert, state)
-            await broadcast(payload)
-
-            # TTS: speak recommendation if not braking
-            if tts_fn and not state.get("brake", False):
-                try:
-                    await tts_fn(alert.get("recommendation", ""), state)
-                except Exception as e:
-                    print(f"[WS] TTS error: {e}")
-    else:
-        # Multi-queue merge mode (Day 2)
-        async for source_name, alert in merge_queues(*queues):
-            state = get_state_fn() if get_state_fn else {}
-            payload = build_payload(alert, state)
-            await broadcast(payload)
-
-            if tts_fn and not state.get("brake", False):
-                try:
-                    await tts_fn(alert.get("recommendation", ""), state)
-                except Exception as e:
-                    print(f"[WS] TTS error: {e}")
+if __name__ == "__main__":
+    print("[WS] Starting WingMan WebSocket server on http://localhost:9000")
+    print("[WS] Dashboard -> http://localhost:9000/ui/index.html")
+    uvicorn.run(app, host="0.0.0.0", port=9000, log_level="warning")

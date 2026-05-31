@@ -15,12 +15,31 @@ from fastapi import FastAPI
 
 app = FastAPI(title="WingMan Mock OpenF1 Server")
 
+_BASE_DIR = os.path.dirname(__file__)
+
+# Optional prefix to select alternative fixtures (set via env var FIXTURE_PREFIX)
+_FIXTURE_PREFIX = os.getenv("FIXTURE_PREFIX", "")
+
+def _prefixed(filename: str) -> str:
+    if not _FIXTURE_PREFIX:
+        return filename
+    # try prefix_filename first, then fall back to original
+    pref = f"{_FIXTURE_PREFIX}_{filename}"
+    return pref
+
 # --- Load fixture data at startup ---
 
 def load_fixture(filename: str) -> list:
-    path = os.path.join("tests", "fixtures", filename)
-    if not os.path.exists(path):
-        print(f"[MockServer] Warning: {path} not found, using empty list")
+    # allow a prefixed fixture name via FIXTURE_PREFIX; fall back to original name
+    candidates = [ _prefixed(filename), filename ] if _FIXTURE_PREFIX else [filename]
+    path = None
+    for name in candidates:
+        p = os.path.join(_BASE_DIR, "..", "tests", "fixtures", name)
+        if os.path.exists(p):
+            path = p
+            break
+    if path is None:
+        print(f"[MockServer] Warning: none of {candidates} found in fixtures, using empty list")
         return []
     with open(path) as f:
         data = json.load(f)
@@ -119,6 +138,7 @@ def reset():
     counters["pos"]  = 0
     counters["int"]  = 0
     session_state["flag"]        = "green"
+    session_state["speed_mult"]  = 1.0
     session_state["total_ticks"] = 0
     session_state["started_at"]  = time.time()
     print("[MockServer] Counters and session state reset")

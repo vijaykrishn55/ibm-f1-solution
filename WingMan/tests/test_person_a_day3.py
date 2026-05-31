@@ -5,8 +5,7 @@ Day 3 focus: Edge cases, demo prep, polish. No new features.
 Person A edge cases (from team plan):
   Edge Case 2 -- Data gap: mock server stops for 3s, data_age_ms rises,
                  safe_default fires, system recovers in 2 ticks.
-  Edge Case 5 -- TORCS disconnect: TORCS drops out, data_age_ms rises,
-                 stale marker injected, system logs disconnect.
+  (Edge Case 5 -- TORCS disconnect: removed, TORCS retired in favour of OpenF1.)
 
 Demo prep:
   - Bahrain Laps 28-38 replay window fixture generation
@@ -128,78 +127,19 @@ def test_edge_case_data_gap_mock_server_restart():
 
 
 # ===========================================================================
-# EDGE CASE 5 -- TORCS disconnect simulation
+# EDGE CASE 5 -- OpenF1 data source resilience (TORCS retired)
 # ===========================================================================
 
-def test_edge_case_torcs_disconnect_stale_marker():
+def test_edge_case_openf1_stale_marker():
     """
-    When TORCS drops out, the adapter should inject a stale marker state
-    with data_source='torcs' and high data_age_ms so the fast path
-    triggers safe_default.
+    When OpenF1 returns no data, state vector should carry high data_age_ms
+    so the fast path triggers safe_default.
     """
     from state.schema import new_state
-
-    # Simulate the stale marker that torcs_adapter.stream() injects
-    age_ms = 4500  # 4.5 seconds since last good read
-    stale_state = new_state(
-        data_source="torcs",
-        data_age_ms=age_ms,
-        soc_estimated=0.0,
-    )
-    assert stale_state["data_source"] == "torcs"
-    assert stale_state["data_age_ms"] == 4500
-    assert stale_state["data_age_ms"] > 2000, "Should exceed stale threshold"
-    assert stale_state["soc_estimated"] == 0.0, "SOC should be zeroed on stale"
-
-    print("Edge Case 5 - TORCS stale marker: OK")
-
-
-def test_edge_case_torcs_disconnect_reconnect_logic():
-    """
-    Verify the TORCS adapter reconnection timing:
-    - ConnectionRefusedError: 5 second retry
-    - General Exception: 3 second retry
-    These are constants in torcs_adapter.stream().
-    """
-    # Verify the constants are documented in the adapter source
-    import inspect
-    from ingestion import torcs_adapter
-
-    source = inspect.getsource(torcs_adapter.stream)
-    assert "ConnectionRefusedError" in source, "Should handle connection refused"
-    assert "Retrying in 5 seconds" in source, "Should retry after 5s on refused"
-    assert "Reconnecting in 3 seconds" in source, "Should reconnect after 3s on other errors"
-    assert "TORCS disconnected" in source or "Disconnected" in source, \
-        "Should log disconnect"
-
-    print("Edge Case 5 - TORCS reconnect logic: OK")
-
-
-def test_edge_case_torcs_graceful_sensor_error():
-    """
-    When TORCS sensors return bad data (e.g. missing keys),
-    torcs_to_state should still produce a valid state vector
-    using defaults.
-    """
-    from ingestion.torcs_adapter import torcs_to_state
-
-    # Minimal sensor dict -- missing most keys
-    minimal = {"speedX": 0.0}
-    state = torcs_to_state(minimal)
-    assert state["data_source"] == "torcs"
-    assert state["speed"] == 0.0
-    assert state["throttle"] == 0.0
-    assert state["brake"] == False
-    assert state["lap"] >= 1
-    assert state["corner_id"] >= 1
-
-    # Empty sensor dict
-    empty = {}
-    state_empty = torcs_to_state(empty)
-    assert state_empty["data_source"] == "torcs"
-    assert state_empty["soc_raw"] == round(94.0 / 94.0, 3)  # MAX_FUEL/MAX_FUEL
-
-    print("Edge Case 5 - graceful sensor error: OK")
+    stale = new_state(data_source="openf1", data_age_ms=4500, soc_estimated=0.0)
+    assert stale["data_source"] == "openf1"
+    assert stale["data_age_ms"] > 2000
+    print("Edge Case 5 (OpenF1) - stale marker: OK")
 
 
 # ===========================================================================
@@ -442,29 +382,6 @@ def test_full_wiring_openf1_to_state():
     print(f"Full wiring - {len(rows)} fixture rows validated: OK")
 
 
-def test_full_wiring_torcs_to_state():
-    """
-    End-to-end check: TORCS sensor data -> torcs_to_state -> validate_state.
-    """
-    from ingestion.torcs_adapter import torcs_to_state
-    from state.schema import validate_state
-
-    test_sensors = [
-        {"speedX": 50.0, "accel": 0.7, "brake": 0.0, "fuel": 80.0,
-         "distFromStart": 500.0, "opponents": [100.0], "distRaced": 500.0},
-        {"speedX": 0.0, "accel": 0.0, "brake": 1.0, "fuel": 90.0,
-         "distFromStart": 0.0, "opponents": [200.0], "distRaced": 0.0},
-        {"speedX": 80.0, "accel": 1.0, "brake": 0.0, "fuel": 10.0,
-         "distFromStart": 3000.0, "opponents": [5.0], "distRaced": 7000.0},
-    ]
-
-    for i, sensors in enumerate(test_sensors):
-        state = torcs_to_state(sensors)
-        warnings = validate_state(state)
-        assert not warnings, f"TORCS sensor set {i} has warnings: {warnings}"
-
-    print(f"Full wiring - {len(test_sensors)} TORCS sensor sets validated: OK")
-
 
 # ===========================================================================
 # Run all
@@ -482,11 +399,9 @@ if __name__ == "__main__":
     test_edge_case_data_gap_openf1_stream_backoff()
     test_edge_case_data_gap_mock_server_restart()
 
-    # Edge Case 5 -- TORCS disconnect
-    print("\n-- Edge Case 5: TORCS Disconnect --")
-    test_edge_case_torcs_disconnect_stale_marker()
-    test_edge_case_torcs_disconnect_reconnect_logic()
-    test_edge_case_torcs_graceful_sensor_error()
+    # Edge Case 5 -- OpenF1 resilience
+    print("\n-- Edge Case 5: OpenF1 Resilience --")
+    test_edge_case_openf1_stale_marker()
 
     # Demo prep
     print("\n-- Demo Prep: Bahrain Laps 28-38 --")
@@ -513,7 +428,6 @@ if __name__ == "__main__":
     # Full wiring checks
     print("\n-- Full Pipeline Wiring --")
     test_full_wiring_openf1_to_state()
-    test_full_wiring_torcs_to_state()
 
     print("\n" + "=" * 60)
     print("All Person A Day 3 tests passed. PASS")

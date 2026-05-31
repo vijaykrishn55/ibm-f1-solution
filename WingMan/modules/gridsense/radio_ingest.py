@@ -33,10 +33,69 @@ class AudioDownloader:
         return temp_file.name
 
 class Transcriber:
+    """
+    Transcribes radio audio clips to text.
+
+    Priority order:
+      1. IBM Docling  (install: pip install docling)
+      2. OpenAI Whisper  (install: pip install openai-whisper)
+      3. Stub fallback — returns fixed mock text so pipeline never crashes
+
+    Docling is the IBM hackathon-preferred tool. If neither is installed
+    the pipeline still runs in mock/stub mode.
+    """
+
+    def __init__(self):
+        # Detect available transcription backend at startup
+        self._backend = self._detect_backend()
+
+    @staticmethod
+    def _detect_backend() -> str:
+        try:
+            from docling.document_converter import DocumentConverter  # noqa: F401
+            return "docling"
+        except ImportError:
+            pass
+        try:
+            import whisper  # noqa: F401
+            return "whisper"
+        except ImportError:
+            pass
+        return "stub"
+
     async def transcribe(self, audio_path: str) -> tuple[str, str, float]:
-        # Stub for real transcription
-        # Returns (transcript, method, confidence)
-        return "mock transcription", "stub", 0.5
+        """Returns (transcript_text, method_name, confidence_0_to_1)."""
+        loop = asyncio.get_event_loop()
+        if self._backend == "docling":
+            return await loop.run_in_executor(None, self._docling_transcribe, audio_path)
+        elif self._backend == "whisper":
+            return await loop.run_in_executor(None, self._whisper_transcribe, audio_path)
+        else:
+            return "mock transcription", "stub", 0.5
+
+    @staticmethod
+    def _docling_transcribe(audio_path: str) -> tuple[str, str, float]:
+        try:
+            from docling.document_converter import DocumentConverter
+            converter = DocumentConverter()
+            result = converter.convert(audio_path)
+            text = result.document.export_to_markdown().strip()
+            return text or "no transcription", "docling", 0.90
+        except Exception as e:
+            logger.warning(f"[Transcriber] Docling failed: {e} — using stub")
+            return "mock transcription", "stub", 0.5
+
+    @staticmethod
+    def _whisper_transcribe(audio_path: str) -> tuple[str, str, float]:
+        try:
+            import whisper
+            model = whisper.load_model("base")
+            result = model.transcribe(audio_path)
+            return result.get("text", "").strip(), "whisper", 0.80
+        except Exception as e:
+            logger.warning(f"[Transcriber] Whisper failed: {e} — using stub")
+            return "mock transcription", "stub", 0.5
+
 
 class RadioPoller:
     def __init__(self, session_key: str, driver_number: str, mock_mode: bool = False):

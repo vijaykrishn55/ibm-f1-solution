@@ -51,15 +51,18 @@ class GridSenseRules:
         alert = None
         # Rule 2: radio_energy_confirmed
         if result.complaint_type == "energy" and soc < 0.35:
+            priority = 10 if soc < 0.4 else 9   # Plan: elevate if SOC < 0.4
+            confidence = result.confidence if soc < 0.6 else 0.5   # Plan: reduce if SOC > 0.6 (anomaly)
             alert = {
                 "alert_id": str(uuid.uuid4()),
                 "timestamp": result.timestamp,
                 "driver": result.driver,
                 "rule": "radio_energy_confirmed",
-                "recommendation": "Driver energy complaint confirmed — recharge window recommended",
-                "reason": "Driver energy complaint confirmed — recharge window recommended",
-                "confidence": result.confidence,
-                "source": "gridsense",
+                "recommendation": f"Driver energy complaint confirmed (SOC {soc:.0%}) — recharge window recommended",
+                "reason": f"Driver energy complaint confirmed (SOC {soc:.0%}) — recharge window recommended",
+                "confidence": confidence,
+                "priority": priority,
+                "source_module": "gridsense",
                 "fan_explanation": ""
             }
         # Rule 1: radio_corroborated_setup
@@ -72,7 +75,8 @@ class GridSenseRules:
                 "recommendation": f"Driver complaint matches telemetry — {result.suggested_setup_adjustment}",
                 "reason": f"Driver complaint matches telemetry — {result.suggested_setup_adjustment}",
                 "confidence": result.confidence,
-                "source": "gridsense",
+                "priority": 8,
+                "source_module": "gridsense",
                 "fan_explanation": ""
             }
         # Rule 3: radio_no_correlation
@@ -85,7 +89,8 @@ class GridSenseRules:
                 "recommendation": "Driver complaint noted — no telemetry confirmation yet",
                 "reason": "Driver complaint noted — no telemetry confirmation yet",
                 "confidence": result.confidence,
-                "source": "gridsense",
+                "priority": 4,
+                "source_module": "gridsense",
                 "fan_explanation": ""
             }
 

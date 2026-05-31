@@ -7,10 +7,12 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 COMPLAINT_KEYWORDS = {
-    "understeer": ["pushing", "understeering", "going wide", "turning in late", "front end", "front grip", "washes out", "not turning", "off the front", "front is gone"],
-    "oversteer":  ["rear", "loose", "sliding", "spinning up", "rear is gone", "oversteering", "step out", "snap", "unstable", "nervous"],
-    "vibration":  ["vibration", "shaking", "flat spot", "shake", "judder", "wobble", "blistering", "tyre shaking"],
-    "energy":     ["battery", "power", "engine", "harvesting", "deployment", "energy", "no power", "power loss", "not harvesting", "power deficit", "ers", "mgu-k"],
+    "understeer":        ["pushing", "understeering", "going wide", "turning in late", "front end", "front grip", "washes out", "not turning", "off the front", "front is gone"],
+    "oversteer":         ["rear", "loose", "sliding", "spinning up", "rear is gone", "oversteering", "step out", "snap", "unstable", "nervous"],
+    "vibration":         ["vibration", "shaking", "flat spot", "shake", "judder", "wobble", "blistering", "tyre shaking"],
+    "energy":            ["battery", "power", "engine", "harvesting", "deployment", "energy", "no power", "power loss", "not harvesting", "power deficit", "ers", "mgu-k"],
+    "tyre_overheating":  ["tyres going off", "no grip", "sliding everywhere", "degrading fast", "overheating", "blistering", "tyres are dead", "gone off", "tyres gone", "graining"],
+    "visibility":        ["can't see", "visor", "sun", "dirty visor", "tear off", "can't look", "blinded", "sunlight"],
 }
 
 NEGATION_KEYWORDS = ["not", "no", "never", "fixed", "better", "improved", "okay now", "ok now", "gone away", "no longer"]

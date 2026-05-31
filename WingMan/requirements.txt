@@ -12,4 +12,6 @@ uvicorn==0.27.1
 pyttsx3==2.99
 gTTS==2.5.4
 redis==7.4.0
+python-dotenv>=1.0.0
+
 

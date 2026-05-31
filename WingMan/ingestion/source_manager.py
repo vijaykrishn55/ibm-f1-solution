@@ -1,13 +1,11 @@
-"""Source Manager: runs OpenF1 and/or TORCS data streams into a shared queue.
+"""Source Manager: runs OpenF1 data stream into a shared queue.
 
 Day 2 — Person A
 
-Supports three modes:
-  - "openf1"  : only OpenF1 mock replay
-  - "torcs"   : only TORCS live adapter
-  - "both"    : both sources feed the same queue (source identified by data_source)
+Mode:
+  "openf1"  : OpenF1 live/replay polling (default)
 
-The fast path pipeline reads from one queue regardless of how many sources are active.
+The fast path pipeline reads from one queue regardless of session type.
 """
 
 import asyncio
@@ -36,7 +34,7 @@ class SourceManager:
         """Start the configured data sources as background tasks."""
         print(f"[SourceManager] Starting in '{self.mode}' mode")
 
-        if self.mode in ("openf1", "both"):
+        if self.mode in ("openf1",):
             from ingestion.openf1_stream import stream as openf1_stream
             task = asyncio.create_task(
                 openf1_stream(self.queue, circuit=self.circuit)
@@ -44,15 +42,6 @@ class SourceManager:
             self._tasks.append(task)
             self._active_sources.append("openf1")
             print("[SourceManager] OpenF1 stream task created")
-
-        if self.mode in ("torcs", "both"):
-            from ingestion.torcs_adapter import stream as torcs_stream
-            task = asyncio.create_task(
-                torcs_stream(self.queue)
-            )
-            self._tasks.append(task)
-            self._active_sources.append("torcs")
-            print("[SourceManager] TORCS stream task created")
 
         if not self._tasks:
             print(f"[SourceManager] ERROR: unknown mode '{self.mode}'")

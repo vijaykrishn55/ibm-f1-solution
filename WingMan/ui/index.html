@@ -1,417 +1,425 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WingMan -- Real-Time F1 Intelligence</title>
-  <meta name="description" content="WingMan real-time F1 energy and aero strategy dashboard for the 2026 season">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #0a0a0a; color: #f0f0f0;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      height: 100vh; display: flex; flex-direction: column;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WingMan -- F1 Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08060a;--surface:#0f1015;--surface2:#16161b;--border:#222;
+  --red:#ff3b3b;--green:#00f28a;--amber:#ffc857;--blue:#58a6ff;
+  --text:#f0f0f0;--muted:#888;--font:'Inter',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column}
 
-    /* Header */
-    header {
-      background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-      padding: 12px 24px;
-      display: flex; align-items: center; gap: 16px;
-      border-bottom: 1px solid #222;
-    }
-    header h1 {
-      font-size: 18px; color: #e10600; letter-spacing: 3px; font-weight: 700;
-    }
-    .header-meta {
-      display: flex; gap: 12px; align-items: center; margin-left: auto;
-    }
-    #source-badge {
-      font-size: 10px; padding: 3px 10px; border-radius: 10px;
-      background: #222; color: #666; text-transform: uppercase;
-      letter-spacing: 1px; font-weight: 600;
-    }
-    #source-badge.torcs { background: #0d2a0d; color: #4caf50; border: 1px solid #1b5e20; }
-    #source-badge.openf1 { background: #1a1a2e; color: #5c6bc0; border: 1px solid #283593; }
-    #connection-status {
-      font-size: 10px; color: #555; display: flex; align-items: center; gap: 4px;
-    }
-    #connection-status.connected { color: #4caf50; }
-    .status-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: #555; display: inline-block;
-    }
-    #connection-status.connected .status-dot { background: #4caf50; }
-    #latency-badge {
-      font-size: 10px; color: #444; padding: 2px 8px;
-      background: #111; border-radius: 8px;
-    }
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{font-size:1.3rem;font-weight:900;letter-spacing:2px;color:var(--red)}
+.logo span{color:var(--text);font-weight:300}
+.logo{text-shadow:0 2px 10px rgba(88,166,255,0.06), 0 0 18px rgba(88,166,255,0.02)}
+.header-meta{display:flex;align-items:center;gap:16px;font-size:.75rem;color:var(--muted)}
+#conn-status{display:flex;align-items:center;gap:6px;font-weight:600;font-size:.75rem;color:var(--muted)}
+#conn-status.connected{color:var(--green)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+#session-info{font-size:.7rem;color:var(--muted)}
 
-    /* Panels */
-    .panels { display: flex; flex: 1; overflow: hidden; }
-    .panel {
-      flex: 1; padding: 20px; border-right: 1px solid #1a1a1a;
-      overflow-y: auto; display: flex; flex-direction: column;
-    }
-    .panel:last-child { border-right: none; }
-    .panel h2 {
-      font-size: 10px; color: #444; letter-spacing: 2px;
-      text-transform: uppercase; margin-bottom: 16px; font-weight: 600;
-    }
+/* MAIN GRID */
+.grid{display:grid;grid-template-columns:1.25fr 1fr;flex:1;gap:10px;padding:12px;overflow:auto}
+.col-header{padding:8px 16px;font-size:.65rem;font-weight:700;letter-spacing:2px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border);text-transform:uppercase}
 
-    /* Engineer Panel */
-    #recommendation {
-      font-size: 20px; color: #fff; line-height: 1.5;
-      min-height: 52px; margin-bottom: 12px; font-weight: 500;
-    }
-    #reason {
-      font-size: 12px; color: #666; margin-bottom: 16px;
-      font-family: 'Consolas', 'Courier New', monospace;
-    }
+/* MODULE CARDS */
+.card{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;transition:background .2s}
+.card:hover{background:var(--surface2)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.module-name{font-size:.7rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-    .metric-row { display: flex; gap: 10px; margin-bottom: 16px; }
-    .metric {
-      background: #111; border-radius: 6px; padding: 10px 14px;
-      flex: 1; border: 1px solid #1a1a1a;
-    }
-    .metric .label {
-      font-size: 9px; color: #444; text-transform: uppercase;
-      letter-spacing: 1px; font-weight: 600;
-    }
-    .metric .value { font-size: 18px; margin-top: 4px; font-weight: 600; }
-    .metric .value.green  { color: #4caf50; }
-    .metric .value.yellow { color: #ffc107; }
-    .metric .value.red    { color: #e10600; }
+/* RECOMMENDATION */
+.rec-text{font-size:1rem;font-weight:600;line-height:1.4;min-height:2.8em;color:var(--text)}
+.rec-text.red{color:var(--red)}
+.rec-text.amber{color:var(--amber)}
 
-    .bar-label {
-      font-size: 9px; color: #444; margin-bottom: 4px;
-      text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
-    }
-    .bar-bg {
-      background: #111; border-radius: 4px; height: 6px;
-      margin-bottom: 16px; border: 1px solid #1a1a1a;
-    }
-    .bar-fill {
-      height: 6px; border-radius: 4px;
-      background: linear-gradient(90deg, #e10600, #ff6b35);
-      transition: width 0.3s ease;
-    }
+/* BARS */
+.bar-row{margin-top:8px}
+.bar-label{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-bottom:3px}
+.bar-track{background:#222;border-radius:3px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s,background .4s}
+.bar-fill.green{background:var(--green)}
+.bar-fill.amber{background:var(--amber)}
+.bar-fill.red{background:var(--red)}
 
-    /* SOC bar */
-    .soc-bar-bg {
-      background: #111; border-radius: 4px; height: 10px;
-      margin-bottom: 16px; border: 1px solid #1a1a1a;
-    }
-    .soc-bar-fill {
-      height: 10px; border-radius: 4px;
-      transition: width 0.3s ease, background 0.3s ease;
-    }
-    .soc-bar-fill.green  { background: linear-gradient(90deg, #2e7d32, #4caf50); }
-    .soc-bar-fill.yellow { background: linear-gradient(90deg, #f57f17, #ffc107); }
-    .soc-bar-fill.red    { background: linear-gradient(90deg, #b71c1c, #e10600); }
+/* SOC GAUGE */
+.soc-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.soc-val{font-size:1.4rem;font-weight:700;min-width:52px}
+.soc-val.green{color:var(--green)}
+.soc-val.amber{color:var(--amber)}
+.soc-val.red{color:var(--red)}
+.soc-bar-wrap{flex:1}
 
-    /* Alert log */
-    #alert-log { list-style: none; flex: 1; }
-    #alert-log li {
-      font-size: 11px; color: #555; padding: 6px 0;
-      border-bottom: 1px solid #0f0f0f;
-      display: flex; justify-content: space-between;
-    }
-    #alert-log li .rule { color: #888; }
-    #alert-log li .lap { color: #444; font-size: 10px; }
-    #alert-log li .conf { color: #444; font-size: 10px; }
+/* STATS ROW */
+.stats{display:flex;gap:12px;margin-top:8px}
+.stat{background:var(--surface2);border-radius:4px;padding:5px 10px;flex:1;text-align:center}
+.stat-label{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.stat-val{font-size:.9rem;font-weight:700;margin-top:2px}
 
-    /* Fan Panel */
-    #fan-explanation {
-      font-size: 15px; color: #ccc; line-height: 1.7;
-      min-height: 60px; margin-bottom: 20px;
-    }
-    #soc-plain {
-      font-size: 13px; color: #888; margin-bottom: 16px;
-      padding: 12px; background: #111; border-radius: 6px;
-      border: 1px solid #1a1a1a;
-    }
-    #granite-status {
-      font-size: 11px; color: #444; padding: 8px 12px;
-      background: #0d0d0d; border-radius: 6px;
-      border: 1px solid #1a1a1a; margin-bottom: 12px;
-    }
-    #granite-status.active { color: #5c6bc0; border-color: #283593; }
-    #strategy-note {
-      font-size: 12px; color: #666; padding: 10px;
-      background: #111; border-radius: 6px;
-      border-left: 3px solid #e10600;
-      font-family: 'Consolas', 'Courier New', monospace;
-    }
+/* ALERT LOG */
+.alert-log{list-style:none;margin-top:8px;max-height:80px;overflow:hidden}
+.alert-log li{font-size:.68rem;color:var(--muted);padding:2px 0;border-bottom:1px solid #1a1a1a;display:flex;gap:8px}
+.alert-log .badge{font-size:.6rem;padding:1px 5px;border-radius:3px;font-weight:700;white-space:nowrap}
+.badge.high{background:#e1060022;color:var(--red);border:1px solid var(--red)}
+.badge.mid{background:#ffc10722;color:var(--amber);border:1px solid var(--amber)}
+.badge.low{background:#00c85322;color:var(--green);border:1px solid var(--green)}
 
-    /* GridSense Panel */
-    #complaint-type {
-      font-size: 15px; color: #ffc107; margin-bottom: 8px;
-      text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
-    }
-    #grid-recommendation {
-      font-size: 13px; color: #ccc; margin-bottom: 16px;
-      line-height: 1.5;
-    }
-    .grid-confidence {
-      margin-bottom: 16px;
-    }
-    #transcript-log { list-style: none; }
-    #transcript-log li {
-      font-size: 11px; color: #555; padding: 6px 0;
-      border-bottom: 1px solid #0f0f0f;
-    }
+/* TREND ARROW */
+.trend{font-size:1rem;font-weight:900}
+.trend.up{color:var(--red)}
+.trend.stable{color:var(--green)}
 
-    /* Priority badge */
-    .priority-badge {
-      display: inline-block; font-size: 9px; padding: 2px 6px;
-      border-radius: 8px; font-weight: 600; letter-spacing: 0.5px;
-    }
-    .priority-badge.high { background: #2d0000; color: #e10600; }
-    .priority-badge.mid  { background: #2d1f00; color: #ffc107; }
-    .priority-badge.low  { background: #1a1a1a; color: #666; }
+/* CORNER BARS (Lap Time Predictor) */
+.corner-bars{display:flex;gap:3px;align-items:flex-end;height:40px;margin-top:8px}
+.c-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;transition:height .4s}
+.c-bar.lost{background:var(--red)}
+.c-bar.gained{background:var(--green)}
 
-    /* Pulse animation for active alerts */
-    @keyframes pulse {
-      0%   { opacity: 1; }
-      50%  { opacity: 0.7; }
-      100% { opacity: 1; }
-    }
-    .pulse { animation: pulse 1.5s ease-in-out infinite; }
-  </style>
+/* RACE RADIO INTELLIGENCE */
+.transcript{font-size:.8rem;font-style:italic;color:var(--muted);margin-top:6px;padding:6px;background:var(--surface2);border-radius:4px;border-left:3px solid var(--blue)}
+.root-cause{font-size:.75rem;color:var(--amber);margin-top:6px}
+.action-btn{margin-top:8px;background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:4px;font-size:.7rem;cursor:pointer;font-family:var(--font);transition:all .2s}
+.action-btn:hover{border-color:var(--green);color:var(--green)}
+.action-btn.actioned{opacity:.4;pointer-events:none}
+
+/* FAN PANEL CARDS */
+.fan-card{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;justify-content:center}
+.fan-module{font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.fan-main{font-size:.9rem;line-height:1.6;color:var(--text)}
+.fan-sub{font-size:.75rem;color:var(--muted);margin-top:6px;line-height:1.5}
+.fan-card.waiting .fan-main{color:var(--muted);font-style:italic}
+
+/* WAITING STATE */
+.waiting-text{color:var(--muted);font-style:italic;font-size:.85rem}
+</style>
 </head>
 <body>
 
 <header>
-  <h1>WINGMAN</h1>
-  <span id="source-badge">NO DATA</span>
+  <div class="logo">WING<span>MAN</span></div>
   <div class="header-meta">
-    <span id="latency-badge">--ms</span>
-    <span id="connection-status"><span class="status-dot"></span> DISCONNECTED</span>
+    <div id="session-info">SESSION 9158 &bull; VER &bull; SINGAPORE 2023</div>
+    <div id="conn-status"><span class="dot"></span> CONNECTING...</div>
   </div>
 </header>
 
-<div class="panels">
+<div class="grid">
+  <!-- LEFT: ENGINEER -->
+  <div>
+    <div class="col-header">Engineer View</div>
 
-  <!-- Engineer Panel -->
-  <div class="panel" id="engineer-panel">
-    <h2>Engineer</h2>
-    <div id="recommendation">Waiting for telemetry...</div>
-    <div id="reason"></div>
+    <!-- WingMan -->
+    <div class="card" id="wm-card">
+      <div class="card-header">
+        <span class="module-name">WingMan &mdash; Energy Strategy</span>
+        <span class="live-dot"></span>
+      </div>
+      <div id="wm-rec" class="rec-text waiting-text">Waiting for telemetry...</div>
+      <div class="bar-row">
+        <div class="bar-label"><span>Confidence</span><span id="wm-conf-val">--</span></div>
+        <div class="bar-track"><div id="wm-conf-bar" class="bar-fill green" style="width:0%"></div></div>
+      </div>
+      <div class="soc-row">
+        <div id="soc-val" class="soc-val green">--%</div>
+        <div class="soc-bar-wrap">
+          <div class="bar-label"><span>State of Charge</span></div>
+          <div class="bar-track"><div id="soc-bar" class="bar-fill green" style="width:85%"></div></div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Corner</div><div class="stat-val" id="stat-corner">--</div></div>
+        <div class="stat"><div class="stat-label">Lap</div><div class="stat-val" id="stat-lap">--</div></div>
+        <div class="stat"><div class="stat-label">Speed</div><div class="stat-val" id="stat-speed">-- km/h</div></div>
+        <div class="stat"><div class="stat-label">Source</div><div class="stat-val" id="stat-src" style="font-size:.7rem">--</div></div>
+      </div>
+      <ul class="alert-log" id="wm-log"></ul>
+    </div>
 
-    <div class="metric-row">
-      <div class="metric">
-        <div class="label">SOC</div>
-        <div class="value" id="soc-value">--</div>
+    <!-- Tyre Health Monitor -->
+    <div class="card" id="tw-card">
+      <div class="card-header">
+        <span class="module-name">Tyre Health Monitor &mdash; Degradation</span>
+        <span class="live-dot" style="background:var(--amber)"></span>
       </div>
-      <div class="metric">
-        <div class="label">Corner</div>
-        <div class="value" id="corner-value">--</div>
+      <div id="tw-rec" class="rec-text waiting-text">Monitoring sector asymmetry...</div>
+      <div class="stats" style="margin-top:8px">
+        <div class="stat"><div class="stat-label">Trend</div><div class="stat-val trend stable" id="tw-trend">&rarr;</div></div>
+        <div class="stat"><div class="stat-label">Confidence</div><div class="stat-val" id="tw-conf">--%</div></div>
+        <div class="stat"><div class="stat-label">Priority</div><div class="stat-val" id="tw-priority">--</div></div>
       </div>
-      <div class="metric">
-        <div class="label">Lap</div>
-        <div class="value" id="lap-value">--</div>
-      </div>
-      <div class="metric">
-        <div class="label">Priority</div>
-        <div class="value" id="priority-value">--</div>
+      <div class="bar-row" style="margin-top:8px">
+        <div class="bar-label"><span>Degradation signal</span><span id="tw-conf-val">--</span></div>
+        <div class="bar-track"><div id="tw-bar" class="bar-fill amber" style="width:0%"></div></div>
       </div>
     </div>
 
-    <div class="bar-label">SOC Level</div>
-    <div class="soc-bar-bg">
-      <div class="soc-bar-fill green" id="soc-bar" style="width:85%"></div>
+    <!-- Lap Time Predictor -->
+    <div class="card" id="gd-card">
+      <div class="card-header">
+        <span class="module-name">Lap Time Predictor &mdash; Lap Analysis</span>
+        <span class="live-dot" style="background:var(--blue)"></span>
+      </div>
+      <div id="gd-rec" class="rec-text waiting-text">Awaiting lap completion...</div>
+      <div class="stats" style="margin-top:8px">
+        <div class="stat"><div class="stat-label">Lap Delta</div><div class="stat-val" id="gd-delta">--</div></div>
+        <div class="stat"><div class="stat-label">Worst Corner</div><div class="stat-val" id="gd-worst">--</div></div>
+        <div class="stat"><div class="stat-label">Lap #</div><div class="stat-val" id="gd-lap">--</div></div>
+      </div>
+      <div class="corner-bars" id="gd-bars"></div>
     </div>
 
-    <div class="bar-label">Confidence</div>
-    <div class="bar-bg"><div class="bar-fill" id="confidence-bar" style="width:0%"></div></div>
-
-    <div class="bar-label">Alert Log</div>
-    <ul id="alert-log"></ul>
-  </div>
-
-  <!-- Fan Panel -->
-  <div class="panel" id="fan-panel">
-    <h2>Fan View</h2>
-    <div id="fan-explanation">Strategy analysis will appear here after Granite processes laps.</div>
-    <div id="soc-plain">Battery status loading...</div>
-    <div id="granite-status">Granite AI: waiting for lap 10</div>
-    <div id="strategy-note"></div>
-  </div>
-
-  <!-- GridSense Panel -->
-  <div class="panel" id="gridsense-panel">
-    <h2>GridSense -- Driver Radio</h2>
-    <div id="complaint-type">No complaint detected</div>
-    <div id="grid-recommendation"></div>
-    <div class="grid-confidence">
-      <div class="bar-label">Complaint Confidence</div>
-      <div class="bar-bg"><div class="bar-fill" id="grid-confidence-bar" style="width:0%"></div></div>
+    <!-- Race Radio Intelligence -->
+    <div class="card" id="gs-card">
+      <div class="card-header">
+        <span class="module-name">Race Radio Intelligence &mdash; Driver Radio</span>
+        <span class="live-dot" style="background:var(--blue)"></span>
+      </div>
+      <div id="gs-complaint" class="rec-text waiting-text">No complaint detected</div>
+      <div id="gs-transcript" class="transcript" style="display:none"></div>
+      <div id="gs-cause" class="root-cause" style="display:none"></div>
+      <div class="bar-row" style="margin-top:8px">
+        <div class="bar-label"><span>Complaint confidence</span><span id="gs-conf-val">--</span></div>
+        <div class="bar-track"><div id="gs-bar" class="bar-fill blue" style="width:0%;background:var(--blue)"></div></div>
+      </div>
+      <button class="action-btn" id="gs-action-btn" onclick="actionGridSense()">Mark as actioned</button>
     </div>
-    <div class="bar-label">Recent Transcripts</div>
-    <ul id="transcript-log"></ul>
   </div>
 
+  <!-- RIGHT: FAN -->
+  <div>
+    <div class="col-header">Fan View</div>
+
+    <!-- WingMan Fan -->
+    <div class="fan-card" id="fan-wm">
+      <div class="fan-module">WingMan</div>
+      <div class="fan-main waiting-text" id="fan-wm-main">Strategy analysis will appear here.</div>
+      <div class="fan-sub" id="fan-wm-sub">Battery status loading...</div>
+      <div class="fan-sub" id="fan-wm-granite" style="color:var(--muted);font-size:.7rem;margin-top:8px">Granite AI: waiting for lap 5</div>
+    </div>
+
+    <!-- Tyre Health Monitor Fan -->
+    <div class="fan-card waiting" id="fan-tw">
+      <div class="fan-module">Tyre Health Monitor</div>
+      <div class="fan-main" id="fan-tw-main">Tyre wear is being monitored across corners.</div>
+      <div class="fan-sub" id="fan-tw-sub">Alert fires 2&ndash;3 laps before the driver feels it.</div>
+    </div>
+
+    <!-- Lap Time Predictor Fan -->
+    <div class="fan-card waiting" id="fan-gd">
+      <div class="fan-module">Lap Time Predictor</div>
+      <div class="fan-main" id="fan-gd-main">Lap time comparison will appear after the first lap.</div>
+      <div class="fan-sub" id="fan-gd-sub">Every corner is compared against the optimal lap.</div>
+    </div>
+
+    <!-- Race Radio Intelligence Fan -->
+    <div class="fan-card waiting" id="fan-gs">
+      <div class="fan-module">Race Radio Intelligence</div>
+      <div class="fan-main" id="fan-gs-main">Listening for driver radio complaints...</div>
+      <div class="fan-sub" id="fan-gs-sub">AI finds the exact cause in telemetry within seconds.</div>
+    </div>
+  </div>
 </div>
 
 <script>
-  // -- WebSocket with auto-reconnect --
-  let ws;
-  let reconnectInterval = 2000;
-  const seenAlerts = new Set();
-  let alertCount = 0;
+// ── WebSocket ──────────────────────────────────────────────
+let ws, reconnectMs = 2000;
+const seen = new Set();
 
-  function connect() {
-    ws = new WebSocket("ws://localhost:8001/ws");
+function connect() {
+  ws = new WebSocket("ws://localhost:9000/ws");
+  ws.onopen = () => {
+    const el = document.getElementById("conn-status");
+    el.innerHTML = '<span class="dot"></span> CONNECTED';
+    el.classList.add("connected");
+    reconnectMs = 2000;
+  };
+  ws.onclose = () => {
+    const el = document.getElementById("conn-status");
+    el.innerHTML = '<span class="dot"></span> RECONNECTING...';
+    el.classList.remove("connected");
+    setTimeout(connect, reconnectMs);
+    reconnectMs = Math.min(reconnectMs * 1.5, 10000);
+  };
+  ws.onerror = () => {};
+  ws.onmessage = (e) => {
+    const a = JSON.parse(e.data);
+    if (seen.has(a.alert_id)) return;
+    seen.add(a.alert_id);
+    if (seen.size > 500) seen.delete(seen.values().next().value);
 
-    ws.onopen = () => {
-      document.getElementById("connection-status").innerHTML =
-        '<span class="status-dot"></span> CONNECTED';
-      document.getElementById("connection-status").classList.add("connected");
-      reconnectInterval = 2000;
+    updateShared(a);
+
+    // Handler mapping accepts both old and new module identifiers
+    const handlers = {
+      'wingman': updateWingMan,
+      'wingman_granite': updateFanPanel,
+      'tyrewhisperer': updateTyreWhisperer,
+      'tyre_health_monitor': updateTyreWhisperer,
+      'ghostdelta': updateGhostDelta,
+      'lap_time_predictor': updateGhostDelta,
+      'gridsense': updateGridSense,
+      'race_radio_intel': updateGridSense
     };
 
-    ws.onclose = () => {
-      document.getElementById("connection-status").innerHTML =
-        '<span class="status-dot"></span> RECONNECTING...';
-      document.getElementById("connection-status").classList.remove("connected");
-      setTimeout(connect, reconnectInterval);
-      reconnectInterval = Math.min(reconnectInterval * 1.5, 10000);
-    };
+    const h = handlers[a.module];
+    if (h) h(a);
+  };
+}
+connect();
 
-    ws.onerror = () => {};
+// ── Shared state ───────────────────────────────────────────
+function updateShared(a) {
+  const soc = a.soc_estimated;
+  if (soc == null) return;
+  const pct = Math.round(soc * 100);
+  const cls = soc > 0.7 ? "green" : soc > 0.4 ? "amber" : "red";
+  document.getElementById("soc-val").textContent = pct + "%";
+  document.getElementById("soc-val").className = "soc-val " + cls;
+  document.getElementById("soc-bar").style.width = pct + "%";
+  document.getElementById("soc-bar").className = "bar-fill " + cls;
+  document.getElementById("stat-corner").textContent = "C" + (a.corner_id || 0);
+  document.getElementById("stat-lap").textContent = "L" + (a.lap || 0);
+  document.getElementById("stat-speed").textContent = Math.round(a.speed || 0) + " km/h";
+  document.getElementById("stat-src").textContent = (a.data_source || "openf1").toUpperCase();
 
-    ws.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
+  // Fan SOC plain text
+  const plains = {green:"Battery healthy — full boost available.", amber:"Battery at "+pct+"% — use boost selectively.", red:"Battery CRITICAL at "+pct+"% — no boost available."};
+  document.getElementById("fan-wm-sub").textContent = plains[cls];
+}
 
-      // Deduplication
-      if (seenAlerts.has(payload.alert_id)) return;
-      seenAlerts.add(payload.alert_id);
-      if (seenAlerts.size > 500) {
-        const first = seenAlerts.values().next().value;
-        seenAlerts.delete(first);
-      }
+// ── WingMan ────────────────────────────────────────────────
+function updateWingMan(a) {
+  const rec = document.getElementById("wm-rec");
+  rec.textContent = a.recommendation || "Maintain current mode";
+  rec.className = "rec-text " + (a.priority >= 8 ? "red" : a.priority >= 5 ? "amber" : "");
+  rec.classList.remove("waiting-text");
 
-      alertCount++;
+  const conf = Math.round((a.confidence || 0) * 100);
+  const cls = a.confidence > 0.8 ? "green" : a.confidence > 0.6 ? "amber" : "red";
+  document.getElementById("wm-conf-bar").style.width = conf + "%";
+  document.getElementById("wm-conf-bar").className = "bar-fill " + cls;
+  document.getElementById("wm-conf-val").textContent = conf + "%";
 
-      if (payload.source_module === "gridsense") {
-        updateGridSense(payload);
-      } else {
-        updateEngineer(payload);
-      }
+  // Alert log
+  const log = document.getElementById("wm-log");
+  const li = document.createElement("li");
+  const bc = a.priority >= 8 ? "high" : a.priority >= 5 ? "mid" : "low";
+  li.innerHTML = `<span class="badge ${bc}">P${a.priority||1}</span><span>${a.rule||""}</span><span style="margin-left:auto;font-size:.6rem">${conf}%</span>`;
+  log.insertBefore(li, log.firstChild);
+  if (log.children.length > 4) log.removeChild(log.lastChild);
 
-      updateShared(payload);
-    };
+  // Fan text
+  const fan = document.getElementById("fan-wm-main");
+  fan.textContent = a.recommendation || "System active.";
+  fan.classList.remove("waiting-text");
+  document.getElementById("fan-wm").classList.remove("waiting");
+}
+
+// ── TyreWhisperer ──────────────────────────────────────────
+function updateTyreWhisperer(a) {
+  const rec = document.getElementById("tw-rec");
+  rec.textContent = a.recommendation || "";
+  rec.classList.remove("waiting-text");
+
+  const conf = Math.round((a.confidence || 0) * 100);
+  document.getElementById("tw-conf").textContent = conf + "%";
+  document.getElementById("tw-conf-val").textContent = conf + "%";
+  document.getElementById("tw-bar").style.width = conf + "%";
+  document.getElementById("tw-priority").textContent = "P" + (a.priority || 1);
+
+  const trend = document.getElementById("tw-trend");
+  if (a.priority >= 7) { trend.textContent = "\u2191"; trend.className = "trend up"; }
+  else                 { trend.textContent = "\u2192"; trend.className = "trend stable"; }
+
+  // Fan
+  document.getElementById("fan-tw-main").textContent = a.recommendation || "Tyre wear developing.";
+  document.getElementById("fan-tw-sub").textContent = a.reason || "One tyre wearing faster — driver hasn't felt it yet.";
+  document.getElementById("fan-tw").classList.remove("waiting");
+}
+
+// ── GhostDelta ─────────────────────────────────────────────
+function updateGhostDelta(a) {
+  const rec = document.getElementById("gd-rec");
+  rec.textContent = a.recommendation || "";
+  rec.classList.remove("waiting-text");
+
+  const ghost = a.ghost_data || {};
+  const delta = ghost.delta != null ? (ghost.delta >= 0 ? "+" : "") + ghost.delta.toFixed(3) + "s" : "--";
+  document.getElementById("gd-delta").textContent = delta;
+  document.getElementById("gd-delta").style.color = (ghost.delta || 0) > 0 ? "var(--red)" : "var(--green)";
+  document.getElementById("gd-worst").textContent = "C" + (ghost.worst_corner || "--");
+  document.getElementById("gd-lap").textContent = ghost.lap || "--";
+
+  // Simple corner bars (up to 16)
+  const bars = document.getElementById("gd-bars");
+  bars.innerHTML = "";
+  const corners = Object.entries(ghost.corner_deltas || {})
+    .sort((left, right) => Number(left[0]) - Number(right[0]));
+  corners.slice(0, 16).forEach(([corner, delta]) => {
+    const b = document.createElement("div");
+    const h = Math.min(38, Math.abs(delta || 0) * 10 + 4);
+    b.className = "c-bar " + (delta > 0 ? "lost" : "gained");
+    b.style.height = h + "px";
+    b.title = `C${corner}: ${delta >= 0 ? "+" : ""}${Number(delta || 0).toFixed(3)}`;
+    bars.appendChild(b);
+  });
+
+  // Fan
+  const fanMain = document.getElementById("fan-gd-main");
+  fanMain.textContent = `Lap ${ghost.lap||"?"} was ${delta} vs best. Most notable corner: C${ghost.worst_corner||"?"} (${ghost.worst_delta != null ? (ghost.worst_delta >= 0 ? "+" : "") + Number(ghost.worst_delta).toFixed(3) : "--"}).`;
+  fanMain.classList.remove("waiting-text");
+  document.getElementById("fan-gd-sub").textContent = a.reason || "Every corner compared against the optimal lap.";
+  document.getElementById("fan-gd").classList.remove("waiting");
+}
+
+// ── GridSense ──────────────────────────────────────────────
+function updateGridSense(a) {
+  const comp = document.getElementById("gs-complaint");
+  comp.textContent = a.recommendation || "Complaint detected";
+  comp.classList.remove("waiting-text");
+
+  const tr = document.getElementById("gs-transcript");
+  if (a.transcript) { tr.textContent = '"' + a.transcript + '"'; tr.style.display = "block"; }
+
+  const cause = document.getElementById("gs-cause");
+  if (a.root_cause) { cause.textContent = "Root cause: " + a.root_cause; cause.style.display = "block"; }
+
+  const conf = Math.round((a.confidence || 0) * 100);
+  document.getElementById("gs-conf-val").textContent = conf + "%";
+  document.getElementById("gs-bar").style.width = conf + "%";
+
+  // Fan
+  document.getElementById("fan-gs-main").textContent = a.recommendation || "Complaint processed.";
+  document.getElementById("fan-gs-sub").textContent = a.reason || "AI found the cause in telemetry data.";
+  document.getElementById("fan-gs").classList.remove("waiting");
+}
+
+function actionGridSense() {
+  document.getElementById("gs-card").style.opacity = "0.45";
+  document.getElementById("gs-action-btn").classList.add("actioned");
+  document.getElementById("gs-action-btn").textContent = "Actioned";
+}
+
+// ── Granite Fan Panel ──────────────────────────────────────
+function updateFanPanel(a) {
+  if (a.fan_explanation) {
+    document.getElementById("fan-wm-main").textContent = a.fan_explanation;
+    document.getElementById("fan-wm-granite").textContent = "Granite AI: active";
+    document.getElementById("fan-wm-granite").style.color = "var(--green)";
   }
-
-  connect();
-
-  // -- Engineer Panel --
-  function updateEngineer(p) {
-    const recEl = document.getElementById("recommendation");
-    recEl.textContent = p.recommendation;
-
-    // Pulse on high priority
-    if (p.priority >= 8) {
-      recEl.classList.add("pulse");
-      setTimeout(() => recEl.classList.remove("pulse"), 3000);
-    }
-
-    document.getElementById("reason").textContent = p.reason || "";
-    document.getElementById("confidence-bar").style.width = (p.confidence * 100) + "%";
-
-    // Priority display
-    const priEl = document.getElementById("priority-value");
-    priEl.textContent = p.priority;
-    priEl.className = "value " + (p.priority >= 8 ? "red" : p.priority >= 5 ? "yellow" : "green");
-
-    // Latency badge
-    if (p._pipeline_latency_ms) {
-      document.getElementById("latency-badge").textContent =
-        p._pipeline_latency_ms.toFixed(1) + "ms";
-    }
-
-    // Fan explanation from Granite
-    if (p.fan_explanation) {
-      document.getElementById("fan-explanation").textContent = p.fan_explanation;
-      document.getElementById("granite-status").textContent = "Granite AI: active";
-      document.getElementById("granite-status").classList.add("active");
-    }
-
-    // Strategy note
-    if (p.strategy_note) {
-      document.getElementById("strategy-note").textContent = p.strategy_note;
-    }
-
-    // Alert log (max 8 entries)
-    const log = document.getElementById("alert-log");
-    const li = document.createElement("li");
-    const priBadgeClass = p.priority >= 8 ? "high" : p.priority >= 5 ? "mid" : "low";
-    li.innerHTML =
-      '<span class="lap">L' + p.lap + ' C' + p.corner_id + '</span> ' +
-      '<span class="rule">' + p.rule + '</span> ' +
-      '<span class="priority-badge ' + priBadgeClass + '">P' + p.priority + '</span> ' +
-      '<span class="conf">' + Math.round(p.confidence * 100) + '%</span>';
-    log.insertBefore(li, log.firstChild);
-    if (log.children.length > 8) log.removeChild(log.lastChild);
+  if (a.recommendation) {
+    document.getElementById("fan-wm-sub").textContent = a.recommendation;
   }
-
-  // -- GridSense Panel --
-  function updateGridSense(p) {
-    const typeEl = document.getElementById("complaint-type");
-    typeEl.textContent = p.rule.replace("gridsense_", "").replace(/_/g, " ");
-
-    // Color by priority
-    if (p.priority >= 8) typeEl.style.color = "#e10600";
-    else if (p.priority >= 5) typeEl.style.color = "#ffc107";
-    else typeEl.style.color = "#4caf50";
-
-    document.getElementById("grid-recommendation").textContent = p.recommendation;
-    document.getElementById("grid-confidence-bar").style.width = (p.confidence * 100) + "%";
-
-    const log = document.getElementById("transcript-log");
-    const li = document.createElement("li");
-    li.textContent = "Lap " + p.lap + ": " + (p.reason || p.recommendation);
-    log.insertBefore(li, log.firstChild);
-    if (log.children.length > 5) log.removeChild(log.lastChild);
-  }
-
-  // -- Shared updates --
-  function updateShared(p) {
-    // SOC value + colour
-    const soc = p.soc_estimated;
-    const socEl = document.getElementById("soc-value");
-    socEl.textContent = Math.round(soc * 100) + "%";
-    const socClass = soc > 0.7 ? "green" : soc > 0.4 ? "yellow" : "red";
-    socEl.className = "value " + socClass;
-
-    // SOC bar
-    const socBar = document.getElementById("soc-bar");
-    socBar.style.width = Math.round(soc * 100) + "%";
-    socBar.className = "soc-bar-fill " + socClass;
-
-    document.getElementById("corner-value").textContent = p.corner_id;
-    document.getElementById("lap-value").textContent = p.lap;
-
-    // Source badge
-    const badge = document.getElementById("source-badge");
-    const src = (p.data_source || "unknown").toLowerCase();
-    badge.textContent = src.toUpperCase();
-    if (src === "torcs") badge.className = "torcs";
-    else if (src === "openf1") badge.className = "openf1";
-    else badge.className = "";
-
-    // SOC plain text (fan panel)
-    const plains = {
-      high:   "Battery healthy -- full boost available",
-      mid:    "Battery at " + Math.round(soc * 100) + "% -- use boost selectively",
-      low:    "Battery low at " + Math.round(soc * 100) + "% -- limit boost usage",
-      danger: "Battery CRITICAL at " + Math.round(soc * 100) + "% -- no boost available"
-    };
-    const key = soc > 0.7 ? "high" : soc > 0.5 ? "mid" : soc > 0.3 ? "low" : "danger";
-    document.getElementById("soc-plain").textContent = plains[key];
-  }
+}
 </script>
-
 </body>
 </html>

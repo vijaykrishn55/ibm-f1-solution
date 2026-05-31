@@ -74,6 +74,18 @@ class Correlator:
             correlation_confirmed = True
             suggested_setup_adjustment = "Notify engineer — potential flat spot — tyre change consideration"
 
+        elif c_type == "tyre_overheating":
+            # Correlate if speed is high (> 150) or brake is being applied — tyre stress signs
+            if speed > 150 or brake:
+                correlation_confirmed = True
+            suggested_setup_adjustment = "Consider early pit window — tyre degradation ahead of optimal window"
+
+        elif c_type == "visibility":
+            # Always note — visibility is a safety flag, telemetry cannot contradict it
+            correlation_confirmed = True
+            suggested_setup_adjustment = "Note for next pit stop — tear-off or visor strip"
+
+
         return CorrelationResult(
             driver=complaint.driver,
             timestamp=complaint.timestamp,

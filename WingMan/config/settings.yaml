@@ -1,6 +1,12 @@
 # Global settings for WingMan
-api_keys: {}
+# Granite runs locally via Ollama — no API key needed.
+
+granite:
+  endpoint: "http://localhost:11434/v1/chat/completions"
+  model: "granite3.3:2b"        # use granite3.3:8b if you have 5+ GB free RAM
+  max_tokens: 500
+  temperature: 0.3
+  timeout_s: 30.0
+
 slo:
   fast_path_p95_ms: 100
-models:
-  granite: true

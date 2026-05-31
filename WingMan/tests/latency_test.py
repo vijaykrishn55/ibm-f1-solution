@@ -19,7 +19,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from state.schema import new_state, validate_state
 from ingestion.openf1_stream import build_state, load_corner_map
-from ingestion.torcs_adapter import torcs_to_state
 from tests.mock_state_vectors import MOCK_STATE_VECTORS
 
 
@@ -38,29 +37,6 @@ def measure_openf1_latency(iterations: int = 200):
         row = rows[i % len(rows)]
         t0 = time.perf_counter()
         state = build_state(row, corner_map)
-        _ = validate_state(state)
-        elapsed = (time.perf_counter() - t0) * 1000
-        latencies.append(elapsed)
-
-    return latencies
-
-
-def measure_torcs_latency(iterations: int = 200):
-    """Measure torcs_to_state latency over synthetic sensor data."""
-    sensor_sets = [
-        {"speedX": 50.0, "accel": 0.7, "brake": 0.0, "fuel": 80.0,
-         "distFromStart": 500.0, "opponents": [100.0], "distRaced": 500.0},
-        {"speedX": 70.0, "accel": 0.9, "brake": 0.0, "fuel": 60.0,
-         "distFromStart": 2000.0, "opponents": [20.0, 50.0], "distRaced": 5000.0},
-        {"speedX": 30.0, "accel": 0.3, "brake": 0.8, "fuel": 40.0,
-         "distFromStart": 3500.0, "opponents": [200.0], "distRaced": 10000.0},
-    ]
-
-    latencies = []
-    for i in range(iterations):
-        sensors = sensor_sets[i % len(sensor_sets)]
-        t0 = time.perf_counter()
-        state = torcs_to_state(sensors)
         _ = validate_state(state)
         elapsed = (time.perf_counter() - t0) * 1000
         latencies.append(elapsed)
@@ -120,17 +96,13 @@ def test_latency():
     openf1_lat = measure_openf1_latency(200)
     p95_openf1 = report("OpenF1 build_state", openf1_lat)
 
-    torcs_lat = measure_torcs_latency(200)
-    p95_torcs = report("TORCS torcs_to_state", torcs_lat)
-
     mock_lat = measure_mock_vectors_latency()
     p95_mock = report("Mock validate_state", mock_lat)
 
-    # SLO assertions (ingestion only -- pipeline total is 100ms)
     print(f"\n-- SLO Check (ingestion < 50ms) --")
 
     all_pass = True
-    for name, p95 in [("OpenF1", p95_openf1), ("TORCS", p95_torcs), ("Mock", p95_mock)]:
+    for name, p95 in [("OpenF1", p95_openf1), ("Mock", p95_mock)]:
         if p95 is not None and p95 >= 50.0:
             print(f"  FAIL: {name} P95={p95:.3f}ms exceeds 50ms SLO")
             all_pass = False

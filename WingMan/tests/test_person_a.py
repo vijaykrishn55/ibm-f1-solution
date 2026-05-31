@@ -46,29 +46,25 @@ def test_build_state():
     print("build_state: OK")
 
 
-def test_torcs_to_state():
-    from ingestion.torcs_adapter import torcs_to_state
+def test_openf1_state_fields():
+    """Verify OpenF1 build_state fills the same key fields that torcs_to_state did."""
+    from ingestion.openf1_stream import build_state, load_corner_map
 
-    sensors = {
-        "speedX": 55.0,      # ~198 km/h
-        "accel":  0.85,
-        "brake":  0.0,
-        "fuel":   75.0,
-        "distFromStart": 999.0,
-        "opponents": [50.0, 30.0, 100.0],
-        "racePos": 3,
+    corner_map = load_corner_map("bahrain")
+    raw = {
+        "speed": 198, "throttle": 85, "brake": False, "drs": 0,
+        "driver_number": 1, "lap_number": 3, "distance": 999,
+        "gap_to_leader": "+30.0",
     }
-
-    state = torcs_to_state(sensors)
-    assert state["speed"]       > 190,        "Speed should be ~198 km/h"
+    state = build_state(raw, corner_map)
+    assert state["speed"]       == 198.0
     assert state["throttle"]    == 0.85
     assert state["brake"]       == False
-    assert state["drs"]         == False      # TORCS has no DRS
-    assert state["soc_raw"]     == round(75.0 / 94.0, 3)
+    assert state["drs"]         == False      # drs=0 = closed
     assert state["corner_id"]   == 4
-    assert state["gap_ahead"]   == 30.0       # nearest opponent
-    assert state["data_source"] == "torcs"
-    print("torcs_to_state: OK")
+    assert state["gap_ahead"]   == 30.0
+    assert state["data_source"] == "openf1"
+    print("openf1_state_fields: OK")
 
 
 def test_mock_server_imports():
@@ -81,6 +77,6 @@ def test_mock_server_imports():
 if __name__ == "__main__":
     test_corner_mapping()
     test_build_state()
-    test_torcs_to_state()
+    test_openf1_state_fields()
     test_mock_server_imports()
-    print("\nAll Person A tests passed.")
+    print("\nAll Person A tests passed.")
